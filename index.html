@@ -417,6 +417,17 @@ window.addEventListener("DOMContentLoaded",()=>{
 }
 </style>
 
+
+<style id="invoice-position-fine-tune-20260912">
+/* 依最新截圖微調：統編整組再往右；黃色賣方章圓框往下，保持在原發票框內 */
+#p1TaxId{
+  transform:translateX(12px) !important;
+}
+#p1SellerStamp{
+  transform:translateY(18px) !important;
+}
+</style>
+
 </head><body>
 <div id="login" class="login"><div class="login-card"><div class="brand">七旗公司</div><form id="loginForm"><div class="field"><label>Email</label><input id="email" type="email" autocomplete="username"></div><div class="field"><label>密碼</label><input id="password" type="password" autocomplete="current-password"></div><button class="primary" type="submit">登入</button></form><div id="loginMsg" class="notice hidden" style="margin-top:12px"></div></div></div>
 <div id="app" class="hidden"><header class="topbar"><div class="top-title">七旗公司｜內帳管理系統</div><div class="top-user"><span id="userEmail"></span><button class="secondary" onclick="logout()">登出</button></div></header><div class="layout"><aside class="sidebar"><nav class="nav">
