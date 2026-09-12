@@ -19,6 +19,40 @@ document.getElementById("cDate")?.addEventListener("keydown",e=>{
   if(e.key==="Enter"||e.key==="Tab") formatCashMDInput();
 });
 
+
+function renderIngredientStats(){
+  const body=document.getElementById("ingredientStatsBody");
+  const totalEl=document.getElementById("ingredientStatsTotal");
+  if(!body||!totalEl)return;
+
+  const rows=[];
+  let total=0;
+  (Array.isArray(invoices)?invoices:[]).forEach(inv=>{
+    let md="";
+    const d=String(inv.invoice_date||inv.date||"");
+    const dm=d.match(/(?:\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+    if(dm) md=String(dm[1]).padStart(2,"0")+"/"+String(dm[2]).padStart(2,"0");
+
+    let items=inv.items;
+    if(typeof items==="string"){try{items=JSON.parse(items)}catch(e){items=[]}}
+    if(!Array.isArray(items))items=[];
+
+    items.forEach(it=>{
+      const name=String(it.name||"").trim();
+      const amount=Number(it.amount ?? (Number(it.qty||0)*Number(it.price||0)))||0;
+      if(name){
+        rows.push({date:md,name,amount});
+        total+=amount;
+      }
+    });
+  });
+
+  body.innerHTML=rows.length
+    ? rows.map(r=>`<tr><td>${esc(r.date)}</td><td>${esc(r.name)}</td><td>${money(r.amount)}</td></tr>`).join("")
+    : '<tr><td colspan="3" class="muted">目前沒有食材資料</td></tr>';
+  totalEl.textContent=money(total);
+}
+
 </script><script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script><style>:root{--bg:#f5f7fa;--card:#fff;--text:#1f2937;--muted:#6b7280;--line:#e5e7eb}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",Arial,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}.topbar{height:64px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;position:sticky;top:0;z-index:5}.top-title{font-size:19px;font-weight:800}.top-user{font-size:13px;color:var(--muted);display:flex;gap:12px;align-items:center}.layout{display:flex;min-height:calc(100vh - 64px)}.sidebar{width:240px;background:#fff;border-right:1px solid var(--line);padding:16px 12px;flex:none}.nav{display:flex;flex-direction:column;gap:4px}.nav button{width:100%;border:0;background:transparent;color:#374151;text-align:left;padding:11px 13px;border-radius:10px;display:flex;align-items:center;gap:11px}.nav button:hover,.nav button.active{background:#f3f4f6;font-weight:700}.icon{width:20px;height:20px;display:inline-flex;flex:none}.icon svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.txt{white-space:nowrap}.main{flex:1;padding:24px;min-width:0}.section{display:none}.section.active{display:block}.page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}.page-head h1{margin:0;font-size:26px}.page-head p{margin:6px 0 0;color:var(--muted)}.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}.stat,.card{background:#fff;border:1px solid var(--line);border-radius:14px}.stat{padding:18px}.stat .label{color:var(--muted);font-size:13px}.stat strong{display:block;font-size:25px;margin-top:6px}.card{padding:18px;margin-bottom:16px}.card h2{font-size:18px;margin:0 0 14px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.field{margin:0}.field label{display:block;font-size:14px;margin-bottom:6px;color:#4b5563}.field input,.field select,.field textarea{width:100%;border:1px solid #d1d5db;border-radius:10px;padding:11px 12px;background:#fff}.form-actions{margin-top:14px;display:flex;gap:8px}.form-actions button,.primary{border:0;border-radius:9px;padding:10px 14px;background:#111827;color:#fff;font-weight:700}.secondary{border:1px solid #d1d5db;background:#fff;border-radius:9px;padding:8px 12px}.danger{border:1px solid #fecaca;background:#fff;color:#b91c1c;border-radius:9px;padding:8px 12px}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:720px}.table th,.table td{border-bottom:1px solid var(--line);padding:11px 10px;text-align:left;white-space:nowrap}.table th{background:#f9fafb;font-size:13px;color:#4b5563}.table td{font-size:14px}.empty{text-align:center;color:var(--muted);padding:28px}.notice{padding:12px 14px;border-radius:10px;background:#f9fafb;border:1px solid var(--line);color:#4b5563;font-size:13px}.login{min-height:100vh;display:grid;place-items:center;padding:24px}.login-card{width:min(420px,100%);background:#fff;border:1px solid var(--line);border-radius:18px;padding:30px;box-shadow:0 10px 35px #0000000d}.brand{font-size:30px;font-weight:800}.sub{color:var(--muted);margin:6px 0 24px}.login .field{margin:12px 0}.login .primary{width:100%}.hidden{display:none!important}.preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.preview-box{border:1px solid var(--line);border-radius:12px;padding:16px}.preview-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}.export-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}@media(max-width:900px){.preview-grid{grid-template-columns:1fr}.sidebar{width:72px;padding:12px 8px}.nav button{justify-content:center;padding:12px}.txt{display:none}.top-user{display:none}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.topbar{padding:0 14px}.main{padding:14px}.cards{gap:8px}.stat{padding:13px}.stat strong{font-size:20px}.grid{grid-template-columns:1fr}.page-head{flex-direction:column}.sidebar{width:60px}}
 </style>
 <style>
@@ -98,7 +132,7 @@ document.getElementById("cDate")?.addEventListener("keydown",e=>{
 .inv-overlay.taxid{left:15.7%;top:20.0%;width:28%;height:4%;letter-spacing:.08em}
 .inv-overlay.date{left:62%;top:20%;width:20%;height:4%;text-align:center}
 .inv-overlay.items{left:3.7%;top:35.7%;width:64.5%;height:28%;white-space:normal;font-weight:600}
-.inv-item-line{display:grid;grid-template-columns:43% 15% 20% 22%;height:25%;align-items:center;text-align:center}
+.inv-item-line{display:grid;grid-template-columns:36% 14% 28% 22%;height:25%;align-items:center;text-align:center}
 .inv-overlay.sales{left:50.5%;top:66.8%;width:17.5%;text-align:center}
 .inv-overlay.tax{left:50.5%;top:73.8%;width:17.5%;text-align:center}
 .inv-overlay.grand{left:50.5%;top:82.3%;width:17.5%;text-align:center}
@@ -110,6 +144,47 @@ document.getElementById("cDate")?.addEventListener("keydown",e=>{
 .inv-row-actions button{padding:6px 9px}
 .invoice-items th:first-child,.invoice-items td:first-child{min-width:128px;text-align:center}
 .invoice-items th:nth-child(2),.invoice-items td:nth-child(2){width:58px;text-align:center}
+</style>
+
+
+<style id="invoice-top-row-style">
+.invoice-top-row{
+  display:grid;
+  grid-template-columns:0.9fr 0.9fr 1fr 1.5fr;
+  gap:10px;
+  align-items:end;
+}
+.invoice-top-row .field{min-width:0}
+.invoice-top-row input,
+.invoice-top-row select{
+  width:100%;
+  min-width:0;
+}
+@media(max-width:900px){
+  .invoice-top-row{
+    grid-template-columns:1fr 1fr;
+  }
+}
+@media(max-width:600px){
+  .invoice-top-row{
+    grid-template-columns:1fr;
+  }
+}
+</style>
+
+
+<style id="ingredient-stats-style">
+#ingredientStatsCard{margin-bottom:16px}
+.ingredient-stats-table{width:100%;border-collapse:collapse}
+.ingredient-stats-table th,.ingredient-stats-table td{
+  padding:11px 12px;
+  border-bottom:1px solid #d7dee6;
+  text-align:center;
+}
+.ingredient-stats-table th:nth-child(1){width:22%}
+.ingredient-stats-table th:nth-child(2){width:48%}
+.ingredient-stats-table th:nth-child(3){width:30%}
+.ingredient-stats-table tfoot th{font-weight:800}
 </style>
 
 </head><body>
@@ -149,18 +224,43 @@ document.getElementById("cDate")?.addEventListener("keydown",e=>{
 <div class="card"><h2>薪資記錄</h2><div class="table-wrap"><table class="table"><thead><tr><th>月份</th><th>員工</th><th>方式</th><th>應領</th><th>扣款</th><th>實領</th><th>操作</th></tr></thead><tbody id="payList"></tbody></table></div></div></section><section id="cash" class="section"><div class="page-head"><div><h1>七旗收支</h1><p>日期 → 支出 → 存入 → 存款餘額</p></div></div><div class="card"><h2>新增收支</h2><div class="grid"><div class="field"><label>日期</label><input id="cDate" type="text" inputmode="numeric" maxlength="5" placeholder="MM/DD"></div><div class="field"><label>支出</label><input id="cOut" type="number" value="0"></div><div class="field"><label>存入</label><input id="cIn" type="number" value="0"></div></div><div class="form-actions"><button id="saveCashBtn" onclick="saveCash()">儲存收支</button><button class="secondary" type="button" onclick="resetCashForm()">清除</button></div></div><div class="card"><h2>收支紀錄</h2><div class="table-wrap"><table class="table"><thead><tr><th>日期</th><th>支出</th><th>存入</th><th>存款餘額</th><th>操作</th></tr></thead><tbody id="cashList"></tbody></table></div></div></section>
 
 <section id="invoice" class="section">
+
+<div class="card" id="ingredientStatsCard">
+  <h2>食材統計表</h2>
+  <div class="table-wrap">
+    <table class="ingredient-stats-table">
+      <thead>
+        <tr>
+          <th>日期 MM/DD</th>
+          <th>品名</th>
+          <th>金額</th>
+        </tr>
+      </thead>
+      <tbody id="ingredientStatsBody">
+        <tr><td colspan="3" class="muted">目前沒有食材資料</td></tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <th colspan="2" style="text-align:right">總金額</th>
+          <th id="ingredientStatsTotal">0</th>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+
   <div class="page-head">
     <div>
       <h1>三聯式發票輸入</h1>
-      <p>發票日期 → 發票號碼 → 買受人 → 品項 → 銷售額／稅額／總計</p>
+      <p></p>
     </div>
   </div>
 
   <div class="card">
-    <h2>新增／修改發票</h2>
-    <div class="grid">
+    <h2>發票</h2>
+    <div class="invoice-top-row">
       <div class="field"><label>發票日期</label><input id="invDate" type="date"></div>
-      <div class="field"><label>發票號碼</label><input id="invNo" placeholder="例如 AB12345678" maxlength="10"></div>
       <div class="field"><label>課稅別</label>
         <select id="invTaxType">
           <option value="taxable">應稅 5%</option>
@@ -170,7 +270,6 @@ document.getElementById("cDate")?.addEventListener("keydown",e=>{
       </div>
       <div class="field"><label>買受人統一編號</label><input id="invBuyerTaxId" inputmode="numeric" maxlength="8" placeholder="8碼統編"></div>
       <div class="field"><label>買受人名稱</label><input id="invBuyerName" placeholder="公司／商號名稱"></div>
-      <div class="field"><label>買受人地址</label><input id="invBuyerAddress" placeholder="地址"></div>
     </div>
 
     <div class="invoice-items-wrap">
@@ -220,15 +319,7 @@ document.getElementById("cDate")?.addEventListener("keydown",e=>{
     <div>公式：(第1筆×1.2)＋(第2筆×1.2)－第一張手開總額</div>
   </div>
 </div></div></div>
-  <div class="card">
-    <h2>發票紀錄</h2>
-    <div class="table-wrap">
-      <table class="table" style="min-width:980px">
-        <thead><tr><th>日期</th><th>發票號碼</th><th>買受人統編</th><th>買受人名稱</th><th>銷售額</th><th>稅額</th><th>總計</th><th>操作</th></tr></thead>
-        <tbody id="invoiceList"></tbody>
-      </table>
-    </div>
-  </div>
+  
 </section>
 <section id="board" class="section"><div class="page-head"><div><h1>板前屋員工資料</h1><p>新增、修改與管理板前屋員工資料</p></div></div><div class="card"><h2 id="boardTitle">新增板前屋員工</h2><div class="grid">
 <div class="field"><label>姓名</label><input id="bbName"></div>
@@ -379,11 +470,11 @@ function calcInvoice(){
 function resetInvoiceForm(){
   editingInvoiceId=null;
   document.getElementById("invDate").value=todayISO();
-  document.getElementById("invNo").value="";
+  
   document.getElementById("invTaxType").value="taxable";
   document.getElementById("invBuyerTaxId").value="";
   document.getElementById("invBuyerName").value="";
-  document.getElementById("invBuyerAddress").value="";
+  
   document.getElementById("invItemsBody").innerHTML="";
   addInvoiceItem();
   const b=document.getElementById("saveInvoiceBtn");if(b)b.textContent="儲存發票";
@@ -413,12 +504,12 @@ async function saveInvoice(){
   const invoice_no=document.getElementById("invNo").value.trim().toUpperCase().replace(/\s/g,"");
   const buyer_tax_id=document.getElementById("invBuyerTaxId").value.trim();
   const buyer_name=document.getElementById("invBuyerName").value.trim();
-  const buyer_address=document.getElementById("invBuyerAddress").value.trim();
+  const buyer_address="";
   const tax_type=document.getElementById("invTaxType").value;
   const note=null;
   const items=getInvoiceItems();
   if(!invoice_date)return alert("請選擇發票日期");
-  if(!invoice_no)return alert("請輸入發票號碼");
+  if(!invoice_no)return;
   if(!buyer_name)return alert("請輸入買受人名稱");
   if(!items.length)return alert("請至少輸入一個品項");
   const c=calcInvoice();
@@ -431,11 +522,11 @@ function editInvoice(id){
   const x=invoiceRecords.find(v=>String(v.id)===String(id));if(!x)return;
   editingInvoiceId=x.id;
   document.getElementById("invDate").value=x.invoice_date||"";
-  document.getElementById("invNo").value=x.invoice_no||"";
+  
   document.getElementById("invTaxType").value=x.tax_type||"taxable";
   document.getElementById("invBuyerTaxId").value=x.buyer_tax_id||"";
   document.getElementById("invBuyerName").value=x.buyer_name||"";
-  document.getElementById("invBuyerAddress").value=x.buyer_address||"";
+  
   document.getElementById("invItemsBody").innerHTML="";
   const items=Array.isArray(x.items)?x.items:[];
   (items.length?items:[{}]).forEach(addInvoiceItem);
