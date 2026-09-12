@@ -405,7 +405,7 @@ window.addEventListener("DOMContentLoaded",()=>{
   <div class="card">
     <h2>發票</h2>
     <div class="invoice-top-row">
-      <div class="field"><label>發票日期</label><input id="invDate" type="date"></div>
+      <div class="field"><label>賣方人名稱</label><input id="invNo" placeholder="請輸入賣方人名稱"></div>
       <div class="field"><label>課稅別</label>
         <select id="invTaxType">
           <option value="taxable">應稅 5%</option>
@@ -416,6 +416,7 @@ window.addEventListener("DOMContentLoaded",()=>{
       <div class="field"><label>買受人統一編號</label><input id="invBuyerTaxId" inputmode="numeric" maxlength="8" placeholder="8碼統編"></div>
       <div class="field"><label>買受人名稱</label><input id="invBuyerName" placeholder="公司／商號名稱"></div>
     </div>
+    <input id="invDate" type="hidden">
 
     <div class="invoice-items-wrap">
       <table class="invoice-items">
@@ -615,6 +616,7 @@ function calcInvoice(){
 function resetInvoiceForm(){
   editingInvoiceId=null;
   document.getElementById("invDate").value=todayISO();
+  document.getElementById("invNo").value="";
   
   document.getElementById("invTaxType").value="taxable";
   document.getElementById("invBuyerTaxId").value="";
@@ -646,14 +648,14 @@ function renderInvoiceList(){
 }
 async function saveInvoice(){
   const invoice_date=document.getElementById("invDate").value;
-  const invoice_no=document.getElementById("invNo").value.trim().toUpperCase().replace(/\s/g,"");
+  const invoice_no=document.getElementById("invNo").value.trim();
   const buyer_tax_id=document.getElementById("invBuyerTaxId").value.trim();
   const buyer_name=document.getElementById("invBuyerName").value.trim();
   const buyer_address="";
   const tax_type=document.getElementById("invTaxType").value;
   const note=null;
   const items=getInvoiceItems();
-  if(!invoice_date)return alert("請選擇發票日期");
+  if(!invoice_date)document.getElementById("invDate").value=todayISO();
   if(!invoice_no)return;
   if(!buyer_name)return alert("請輸入買受人名稱");
   if(!items.length)return alert("請至少輸入一個品項");
@@ -667,6 +669,7 @@ function editInvoice(id){
   const x=invoiceRecords.find(v=>String(v.id)===String(id));if(!x)return;
   editingInvoiceId=x.id;
   document.getElementById("invDate").value=x.invoice_date||"";
+  document.getElementById("invNo").value=x.invoice_no||"";
   
   document.getElementById("invTaxType").value=x.tax_type||"taxable";
   document.getElementById("invBuyerTaxId").value=x.buyer_tax_id||"";
@@ -690,7 +693,7 @@ document.addEventListener("input",e=>{
   if(e.target&&["invQty","invPrice"].includes(e.target.id))calcInvoice()
 });
 document.getElementById("invTaxType")?.addEventListener("change",calcInvoice);
-["invDate","invBuyerTaxId","invBuyerName"].forEach(id=>document.getElementById(id)?.addEventListener("input",updateInvDoublePreview));
+["invNo","invBuyerTaxId","invBuyerName"].forEach(id=>document.getElementById(id)?.addEventListener("input",updateInvDoublePreview));
 
 async function loadBoard(){const r=await sb.from("board_house_employees").select("*").order("name");if(r.error){console.warn(r.error);alert("板前屋資料讀取失敗："+r.error.message);return}boardEmployees=r.data||[];document.getElementById("boardList").innerHTML=boardEmployees.map(x=>`<tr><td><button class="secondary" onclick="editBoard('${x.id}')">修改</button></td><td><button class="danger" onclick="deleteRow('board_house_employees','${x.id}',loadBoard)">刪除</button></td><td>${esc(x.name||"")}</td><td>${esc(boardDate(x.birth_date))}</td><td>${esc(x.id_number||"")}</td><td>${esc(boardDate(x.hire_date))}</td><td>${esc(boardDate(x.labor_insurance_start))}</td><td>${esc(boardDate(x.labor_insurance_end))}</td><td>${esc(x.insured_amount??"")}</td><td>${esc(boardDate(x.health_insurance_start))}</td><td>${esc(boardDate(x.health_insurance_end))}</td><td>${esc(x.occupational_insurance_amount??"")}</td><td>${esc(x.phone||"")}</td><td>${esc(x.address||"")}</td><td>${esc(x.employee_code||"")}</td><td>${esc(x.note||"")}</td></tr>`).join("")||`<tr><td colspan="16" class="empty">目前沒有板前屋員工資料</td></tr>`}
 function setBoardValue(id,v){document.getElementById(id).value=v??""}
