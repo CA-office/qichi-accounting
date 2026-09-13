@@ -667,6 +667,36 @@ window.addEventListener("DOMContentLoaded",()=>{
 }
 </style>
 
+
+<style id="cash-sync-layout-fix">
+#cash .cash-table-wrap .table{
+  table-layout:fixed;
+  min-width:980px;
+}
+#cash .cash-table-wrap .table th:nth-child(1),
+#cash .cash-table-wrap .table td:nth-child(1){width:11%}
+#cash .cash-table-wrap .table th:nth-child(2),
+#cash .cash-table-wrap .table td:nth-child(2){width:11%}
+#cash .cash-table-wrap .table th:nth-child(3),
+#cash .cash-table-wrap .table td:nth-child(3){width:11%}
+#cash .cash-table-wrap .table th:nth-child(4),
+#cash .cash-table-wrap .table td:nth-child(4){width:15%}
+#cash .cash-table-wrap .table th:nth-child(5),
+#cash .cash-table-wrap .table td:nth-child(5){
+  width:27%;
+  text-align:center !important;
+  white-space:normal;
+}
+#cash .cash-table-wrap .table th:nth-child(6),
+#cash .cash-table-wrap .table td:nth-child(6){width:25%}
+
+@media(max-width:700px){
+  #cash .cash-table-wrap .table{
+    min-width:900px !important;
+  }
+}
+</style>
+
 </head><body>
 <div id="login" class="login"><div class="login-card"><div class="brand">七旗公司</div><form id="loginForm"><div class="field"><label>Email</label><input id="email" type="email" autocomplete="username"></div><div class="field"><label>密碼</label><input id="password" type="password" autocomplete="current-password"></div><button class="primary" type="submit">登入</button></form><div id="loginMsg" class="notice hidden" style="margin-top:12px"></div></div></div>
 <div id="app" class="hidden"><header class="topbar"><div class="top-title">七旗公司｜內帳管理系統</div><div class="top-user"><span id="userEmail"></span><button class="secondary" onclick="logout()">登出</button></div></header><div class="layout"><aside class="sidebar"><nav class="nav">
@@ -889,31 +919,22 @@ function exportPayrollExcel(){const rows=exportRows();if(!rows.length)return ale
 function exportPayrollPDF(){const rows=exportRows();if(!rows.length)return alert("沒有可輸出的薪資結果");const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:"landscape"});doc.text("Qichi Payroll",14,14);doc.autoTable({startY:20,head:[["Name","Bank Code","Account","Net Pay"]],body:rows.map(x=>[x.姓名,x.銀行代碼,x.銀行帳號,String(x.實領薪資)])});doc.save("qichi_payroll.pdf")}
 async function loadBanks(){const r=await sb.from("bank_accounts").select("*").order("created_at",{ascending:false});if(r.error){console.warn(r.error);return}bankAccounts=r.data||[];if(employees.length)renderEmployees()}
 
+
 let editingCashOriginalDate="";
+let cashRecords=[];
+let cashSyncReady=false;
 const QICHI_CASH_KEY="qichi_cash_records_v3";
 
-function readCashRecords(){
+function readCashLocalBackup(){
   try{
     const rows=JSON.parse(localStorage.getItem(QICHI_CASH_KEY)||"[]");
     if(Array.isArray(rows))return rows;
   }catch(e){}
-  // 相容上一版 localStorage key，自動帶回舊資料
   try{
     const old=JSON.parse(localStorage.getItem("qichi_cash_records_v2")||"[]");
-    if(Array.isArray(old) && old.length){
-      const migrated=old.map(x=>({
-        ...x,
-        summary:String(x.summary||"")
-      }));
-      localStorage.setItem(QICHI_CASH_KEY,JSON.stringify(migrated));
-      return migrated;
-    }
+    if(Array.isArray(old))return old;
   }catch(e){}
   return [];
-}
-
-function writeCashRecords(rows){
-  localStorage.setItem(QICHI_CASH_KEY,JSON.stringify(rows||[]));
 }
 
 function formatCashMD(){
@@ -929,7 +950,15 @@ function formatCashMD(){
   el.value=v;
   return v;
 }
-
+function cashMDToISO(md){
+  const m=String(md||"").match(/^(\d{2})\/(\d{2})$/);
+  if(!m)return "";
+  let year=new Date().getFullYear();
+  if(editingCashOriginalDate && /^\d{4}-/.test(editingCashOriginalDate)){
+    year=Number(editingCashOriginalDate.slice(0,4));
+  }
+  return `${year}-${m[1]}-${m[2]}`;
+}
 function cashDisplayMD(v){
   const s=String(v||"");
   const iso=s.match(/^\d{4}-(\d{2})-(\d{2})$/);
@@ -937,15 +966,40 @@ function cashDisplayMD(v){
   const md=s.match(/^(\d{2})\/(\d{2})$/);
   return md?s:"";
 }
-
 function cashSortValue(v){
-  const m=cashDisplayMD(v).match(/^(\d{2})\/(\d{2})$/);
-  if(!m)return 9999;
-  return Number(m[1])*100+Number(m[2]);
+  const s=String(v||"");
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s))return Number(s.replace(/-/g,""));
+  const m=cashDisplayMD(s).match(/^(\d{2})\/(\d{2})$/);
+  return m ? Number(`${new Date().getFullYear()}${m[1]}${m[2]}`) : 99999999;
 }
-
 function cleanCashNumber(v){
   return Number(String(v||"").replace(/,/g,"").replace(/[^\d.-]/g,""))||0;
+}
+
+async function migrateLocalCashToSupabase(){
+  const local=readCashLocalBackup();
+  if(!local.length || cashRecords.length)return;
+  const payload=local.map(x=>{
+    const md=cashDisplayMD(x.date||x.transaction_date||"");
+    const iso=/^\d{4}-\d{2}-\d{2}$/.test(String(x.date||""))
+      ? String(x.date)
+      : `${new Date().getFullYear()}-${md.slice(0,2)}-${md.slice(3,5)}`;
+    return {
+      transaction_date:iso,
+      expense:Number(x.expense||0),
+      deposit:Number(x.deposit||0),
+      summary:String(x.summary||""),
+      checked:!!x.checked
+    };
+  }).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x.transaction_date));
+
+  if(!payload.length)return;
+  const r=await sb.from("cash_transactions").insert(payload);
+  if(!r.error){
+    localStorage.setItem("qichi_cash_migrated_to_supabase","1");
+    localStorage.removeItem(QICHI_CASH_KEY);
+    localStorage.removeItem("qichi_cash_records_v2");
+  }
 }
 
 function resetCashForm(){
@@ -963,49 +1017,40 @@ function resetCashForm(){
   if(b)b.textContent="儲存收支";
 }
 
-function saveCash(){
-  const date=formatCashMD();
-  if(!date)return alert("日期請輸入 MM/DD，例如 08/27 或 0827");
+async function saveCash(){
+  const md=formatCashMD();
+  const transaction_date=cashMDToISO(md);
+  if(!transaction_date)return alert("日期請輸入 MM/DD，例如 08/27 或 0827");
 
   const expense=cleanCashNumber(document.getElementById("cOut")?.value);
   const deposit=cleanCashNumber(document.getElementById("cIn")?.value);
   const summary=String(document.getElementById("cSummary")?.value||"").trim();
-
   if(!expense&&!deposit)return alert("請輸入支出或收入金額");
 
-  const rows=readCashRecords();
-
+  const payload={transaction_date,expense,deposit,summary};
+  let r;
   if(editingCashId){
-    const idx=rows.findIndex(x=>String(x.id)===String(editingCashId));
-    if(idx>=0){
-      rows[idx]={...rows[idx],date,expense,deposit,summary};
-    }
+    r=await sb.from("cash_transactions").update(payload).eq("id",editingCashId);
   }else{
-    rows.push({
-      id:"cash_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),
-      date,
-      expense,
-      deposit,
-      summary,
-      checked:false,
-      createdAt:Date.now()
-    });
+    r=await sb.from("cash_transactions").insert({...payload,checked:false});
   }
-
-  writeCashRecords(rows);
+  if(r.error){
+    if(String(r.error.message||"").includes("cash_transactions")){
+      return alert("七旗收支同步資料表尚未建立，請先執行我附的「七旗收支_建立同步資料表.sql」。");
+    }
+    return alert("收支儲存失敗："+r.error.message);
+  }
   resetCashForm();
-  loadCash();
+  await loadCash();
   document.getElementById("cDate")?.focus();
 }
 
 function editCash(id){
-  const rows=readCashRecords();
-  const x=rows.find(v=>String(v.id)===String(id));
+  const x=cashRecords.find(v=>String(v.id)===String(id));
   if(!x)return alert("找不到這筆收支資料");
-
   editingCashId=x.id;
-  editingCashOriginalDate=x.date||"";
-  document.getElementById("cDate").value=cashDisplayMD(x.date);
+  editingCashOriginalDate=x.transaction_date||"";
+  document.getElementById("cDate").value=cashDisplayMD(x.transaction_date);
   document.getElementById("cOut").value=Number(x.expense||0);
   document.getElementById("cIn").value=Number(x.deposit||0);
   document.getElementById("cSummary").value=x.summary||"";
@@ -1013,31 +1058,28 @@ function editCash(id){
   document.getElementById("cDate")?.focus();
 }
 
-function deleteCash(id){
+async function deleteCash(id){
   if(!confirm("確定刪除這筆收支紀錄嗎？"))return;
-  const rows=readCashRecords().filter(x=>String(x.id)!==String(id));
-  writeCashRecords(rows);
+  const r=await sb.from("cash_transactions").delete().eq("id",id);
+  if(r.error)return alert("刪除失敗："+r.error.message);
   if(String(editingCashId)===String(id))resetCashForm();
-  loadCash();
+  await loadCash();
 }
 
-function toggleCashChecked(id){
-  const rows=readCashRecords();
-  const idx=rows.findIndex(x=>String(x.id)===String(id));
-  if(idx<0)return;
-  rows[idx].checked=!rows[idx].checked;
-  writeCashRecords(rows);
-  loadCash();
+async function toggleCashChecked(id){
+  const x=cashRecords.find(v=>String(v.id)===String(id));
+  if(!x)return;
+  const r=await sb.from("cash_transactions").update({checked:!x.checked}).eq("id",id);
+  if(r.error)return alert("核對狀態儲存失敗："+r.error.message);
+  await loadCash();
 }
-
 
 function exportCashExcel(){
   if(typeof XLSX==="undefined")return alert("Excel 元件尚未載入，請重新整理後再試");
-
-  const rows=readCashRecords().slice().sort((a,b)=>{
-    const d=cashSortValue(a.date)-cashSortValue(b.date);
+  const rows=cashRecords.slice().sort((a,b)=>{
+    const d=cashSortValue(a.transaction_date)-cashSortValue(b.transaction_date);
     if(d!==0)return d;
-    return Number(a.createdAt||0)-Number(b.createdAt||0);
+    return String(a.created_at||"").localeCompare(String(b.created_at||""));
   });
   if(!rows.length)return alert("目前沒有收支紀錄可下載");
 
@@ -1047,7 +1089,7 @@ function exportCashExcel(){
     ...rows.map(x=>{
       exportBalance+=Number(x.deposit||0)-Number(x.expense||0);
       return [
-        cashDisplayMD(x.date),
+        cashDisplayMD(x.transaction_date),
         Number(x.expense||0),
         Number(x.deposit||0),
         exportBalance,
@@ -1058,27 +1100,18 @@ function exportCashExcel(){
   ];
 
   const ws=XLSX.utils.aoa_to_sheet(aoa);
-  ws["!cols"]=[{wch:12},{wch:16},{wch:16},{wch:18},{wch:36},{wch:10}];
-
+  ws["!cols"]=[{wch:12},{wch:16},{wch:16},{wch:18},{wch:28},{wch:10}];
   const range=XLSX.utils.decode_range(ws["!ref"]);
   for(let R=range.s.r;R<=range.e.r;R++){
     for(let C=range.s.c;C<=range.e.c;C++){
       const addr=XLSX.utils.encode_cell({r:R,c:C});
-      const cell=ws[addr];
-      if(!cell)continue;
+      const cell=ws[addr]; if(!cell)continue;
       cell.s=cell.s||{};
       cell.s.font={name:"Noto Sans HK",sz:11,bold:R===0};
-      cell.s.alignment={
-        horizontal:"center",
-        vertical:"center"
-      };
-      if(R>0 && (C===1 || C===2 || C===3)){
-        cell.z='#,##0';
-      }
+      cell.s.alignment={horizontal:"center",vertical:"center"};
+      if(R>0 && (C===1||C===2||C===3))cell.z='#,##0';
     }
   }
-
-  // Excel 開啟時凍結第一列標題（支援可讀取此屬性的 Excel 產生器）
   ws["!freeze"]={xSplit:0,ySplit:1,topLeftCell:"A2",activePane:"bottomLeft",state:"frozen"};
   ws["!autofilter"]={ref:`A1:F${rows.length+1}`};
 
@@ -1087,12 +1120,43 @@ function exportCashExcel(){
   XLSX.writeFile(wb,"七旗收支紀錄.xlsx");
 }
 
-function loadCash(){
-  // 依 MM/DD 日期由小到大排序；同一天依建立時間排列
-  const rows=readCashRecords().slice().sort((a,b)=>{
-    const dateDiff=cashSortValue(a.date)-cashSortValue(b.date);
+async function loadCash(){
+  const r=await sb.from("cash_transactions")
+    .select("*")
+    .order("transaction_date",{ascending:true})
+    .order("created_at",{ascending:true});
+
+  if(r.error){
+    cashSyncReady=false;
+    const local=readCashLocalBackup();
+    cashRecords=local.map(x=>({
+      id:x.id,
+      transaction_date:/^\d{4}-/.test(String(x.date||""))
+        ? String(x.date)
+        : `${new Date().getFullYear()}-${String(cashDisplayMD(x.date)).slice(0,2)}-${String(cashDisplayMD(x.date)).slice(3,5)}`,
+      expense:Number(x.expense||0),
+      deposit:Number(x.deposit||0),
+      summary:String(x.summary||""),
+      checked:!!x.checked,
+      created_at:String(x.createdAt||"")
+    }));
+  }else{
+    cashSyncReady=true;
+    cashRecords=r.data||[];
+    if(!cashRecords.length && localStorage.getItem("qichi_cash_migrated_to_supabase")!=="1"){
+      await migrateLocalCashToSupabase();
+      const r2=await sb.from("cash_transactions")
+        .select("*")
+        .order("transaction_date",{ascending:true})
+        .order("created_at",{ascending:true});
+      if(!r2.error)cashRecords=r2.data||[];
+    }
+  }
+
+  const rows=cashRecords.slice().sort((a,b)=>{
+    const dateDiff=cashSortValue(a.transaction_date)-cashSortValue(b.transaction_date);
     if(dateDiff!==0)return dateDiff;
-    return Number(a.createdAt||0)-Number(b.createdAt||0);
+    return String(a.created_at||"").localeCompare(String(b.created_at||""));
   });
 
   let bal=0;
@@ -1105,7 +1169,7 @@ function loadCash(){
   if(body){
     body.innerHTML=withBalance.map(x=>`
       <tr>
-        <td>${esc(cashDisplayMD(x.date))}</td>
+        <td>${esc(cashDisplayMD(x.transaction_date))}</td>
         <td>${money(x.expense)}</td>
         <td>${money(x.deposit)}</td>
         <td>${money(x.balance)}</td>
@@ -1125,7 +1189,6 @@ function loadCash(){
 
   const totalExpense=rows.reduce((s,x)=>s+Number(x.expense||0),0);
   const totalDeposit=rows.reduce((s,x)=>s+Number(x.deposit||0),0);
-
   const hb=document.getElementById("homeBalance");
   const he=document.getElementById("homeExpense");
   const hi=document.getElementById("homeIncome");
