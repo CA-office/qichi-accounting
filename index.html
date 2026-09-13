@@ -566,6 +566,107 @@ window.addEventListener("DOMContentLoaded",()=>{
 }
 </style>
 
+
+<style id="cash-sticky-excel-style">
+.cash-record-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+}
+.cash-record-head h2{margin:0}
+#cash .cash-table-wrap{
+  max-height:65vh;
+  overflow:auto;
+  position:relative;
+}
+#cash .cash-table-wrap thead th{
+  position:sticky;
+  top:0;
+  z-index:20;
+  background:#f6f8fa;
+  box-shadow:0 1px 0 #d9e0e6;
+}
+@media(max-width:700px){
+  .cash-record-head{
+    align-items:center;
+  }
+  .cash-record-head button{
+    width:auto!important;
+    flex:0 0 auto;
+    white-space:nowrap;
+  }
+  #cash .cash-table-wrap{
+    max-height:62vh;
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  #cash .cash-table-wrap thead th{
+    position:sticky!important;
+    top:0!important;
+    z-index:30!important;
+  }
+}
+</style>
+
+
+<style id="qichi-more-sticky-table-headers">
+/* 共用：讓指定表格區塊可在區塊內捲動，標題列固定 */
+#attendance .table-wrap,
+#board .table-wrap,
+#payroll .card:last-of-type .table-wrap{
+  max-height:65vh;
+  overflow:auto;
+  position:relative;
+}
+
+/* 打卡/件數明細 */
+#attendance .table-wrap thead th{
+  position:sticky;
+  top:0;
+  z-index:25;
+  background:#f6f8fa;
+  box-shadow:0 1px 0 #d9e0e6;
+}
+
+/* 板前屋員工資料 */
+#board .table-wrap thead th{
+  position:sticky;
+  top:0;
+  z-index:25;
+  background:#f6f8fa;
+  box-shadow:0 1px 0 #d9e0e6;
+}
+
+/* 薪資記錄 */
+#payroll .card:last-of-type .table-wrap thead th{
+  position:sticky;
+  top:0;
+  z-index:25;
+  background:#f6f8fa;
+  box-shadow:0 1px 0 #d9e0e6;
+}
+
+@media(max-width:700px){
+  #attendance .table-wrap,
+  #board .table-wrap,
+  #payroll .card:last-of-type .table-wrap{
+    max-height:62vh;
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  #attendance .table-wrap thead th,
+  #board .table-wrap thead th,
+  #payroll .card:last-of-type .table-wrap thead th{
+    position:sticky!important;
+    top:0!important;
+    z-index:30!important;
+  }
+}
+</style>
+
 </head><body>
 <div id="login" class="login"><div class="login-card"><div class="brand">七旗公司</div><form id="loginForm"><div class="field"><label>Email</label><input id="email" type="email" autocomplete="username"></div><div class="field"><label>密碼</label><input id="password" type="password" autocomplete="current-password"></div><button class="primary" type="submit">登入</button></form><div id="loginMsg" class="notice hidden" style="margin-top:12px"></div></div></div>
 <div id="app" class="hidden"><header class="topbar"><div class="top-title">七旗公司｜內帳管理系統</div><div class="top-user"><span id="userEmail"></span><button class="secondary" onclick="logout()">登出</button></div></header><div class="layout"><aside class="sidebar"><nav class="nav">
@@ -618,8 +719,11 @@ window.addEventListener("DOMContentLoaded",()=>{
 </div>
 
 <div class="card">
-  <h2>收支紀錄</h2>
-  <div class="table-wrap">
+  <div class="cash-record-head">
+    <h2>收支紀錄</h2>
+    <button type="button" class="primary" onclick="exportCashExcel()">下載 Excel</button>
+  </div>
+  <div class="table-wrap cash-table-wrap">
     <table class="table">
       <thead>
         <tr>
@@ -923,6 +1027,58 @@ function toggleCashChecked(id){
   rows[idx].checked=!rows[idx].checked;
   writeCashRecords(rows);
   loadCash();
+}
+
+
+function exportCashExcel(){
+  if(typeof XLSX==="undefined")return alert("Excel 元件尚未載入，請重新整理後再試");
+
+  const rows=readCashRecords().slice().sort((a,b)=>{
+    const d=cashSortValue(a.date)-cashSortValue(b.date);
+    if(d!==0)return d;
+    return Number(a.createdAt||0)-Number(b.createdAt||0);
+  });
+  if(!rows.length)return alert("目前沒有收支紀錄可下載");
+
+  const aoa=[
+    ["日期","支出","收入","摘要","核對"],
+    ...rows.map(x=>[
+      cashDisplayMD(x.date),
+      Number(x.expense||0),
+      Number(x.deposit||0),
+      String(x.summary||""),
+      x.checked?"✓":""
+    ])
+  ];
+
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws["!cols"]=[{wch:12},{wch:16},{wch:16},{wch:36},{wch:10}];
+
+  const range=XLSX.utils.decode_range(ws["!ref"]);
+  for(let R=range.s.r;R<=range.e.r;R++){
+    for(let C=range.s.c;C<=range.e.c;C++){
+      const addr=XLSX.utils.encode_cell({r:R,c:C});
+      const cell=ws[addr];
+      if(!cell)continue;
+      cell.s=cell.s||{};
+      cell.s.font={name:"Noto Sans HK",sz:11,bold:R===0};
+      cell.s.alignment={
+        horizontal:C===3?"left":"center",
+        vertical:"center"
+      };
+      if(R>0 && (C===1 || C===2)){
+        cell.z='#,##0';
+      }
+    }
+  }
+
+  // Excel 開啟時凍結第一列標題（支援可讀取此屬性的 Excel 產生器）
+  ws["!freeze"]={xSplit:0,ySplit:1,topLeftCell:"A2",activePane:"bottomLeft",state:"frozen"};
+  ws["!autofilter"]={ref:`A1:E${rows.length+1}`};
+
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"收支紀錄");
+  XLSX.writeFile(wb,"七旗收支紀錄.xlsx");
 }
 
 function loadCash(){
