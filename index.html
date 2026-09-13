@@ -501,6 +501,37 @@ window.addEventListener("DOMContentLoaded",()=>{
 }
 </style>
 
+
+<style id="cash-check-style">
+.cash-action-group{display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.cash-check-btn{
+  width:34px!important;
+  min-width:34px;
+  height:34px;
+  padding:0!important;
+  margin:0!important;
+  border:1px solid #b8c4ce!important;
+  border-radius:8px!important;
+  background:#fff!important;
+  color:#78909c!important;
+  font-size:18px!important;
+  font-weight:900!important;
+  line-height:32px!important;
+}
+.cash-check-btn.checked{
+  background:#22a865!important;
+  border-color:#22a865!important;
+  color:#fff!important;
+}
+.cash-action-group .secondary,
+.cash-action-group .danger{
+  width:auto!important;
+  margin:0!important;
+  padding:7px 10px!important;
+}
+#cashList td:last-child{text-align:center}
+</style>
+
 </head><body>
 <div id="login" class="login"><div class="login-card"><div class="brand">七旗公司</div><form id="loginForm"><div class="field"><label>Email</label><input id="email" type="email" autocomplete="username"></div><div class="field"><label>密碼</label><input id="password" type="password" autocomplete="current-password"></div><button class="primary" type="submit">登入</button></form><div id="loginMsg" class="notice hidden" style="margin-top:12px"></div></div></div>
 <div id="app" class="hidden"><header class="topbar"><div class="top-title">七旗公司｜內帳管理系統</div><div class="top-user"><span id="userEmail"></span><button class="secondary" onclick="logout()">登出</button></div></header><div class="layout"><aside class="sidebar"><nav class="nav">
@@ -535,7 +566,7 @@ window.addEventListener("DOMContentLoaded",()=>{
 <div class="card"><h2>單計帳制</h2><div class="notice">自動讀取員工設定與當月打卡／件數紀錄。</div><div class="form-actions"><button onclick="calculatePiece()">計算</button><button class="secondary" onclick="savePayrollPreview('piece')">儲存</button></div><div id="pieceResult" class="notice" style="margin-top:12px">尚未計算</div></div>
 <div class="card"><h2>月薪制</h2><div class="notice">請假扣薪採 24 天制：日薪＝月薪 ÷ 24；請假時數依每日 8 小時計算。</div><div class="form-actions"><button onclick="calculateMonthly()">計算</button><button class="secondary" onclick="savePayrollPreview('monthly')">儲存</button></div><div id="monthlyResult" class="notice" style="margin-top:12px">尚未計算</div></div>
 <div class="card"><h2>薪資預覽</h2><div class="preview-grid"><div class="preview-box"><h3>薪資紀錄預覽</h3><div id="recordPreview" class="empty">請先選擇月份與員工</div></div><div class="preview-box"><h3>薪資結果預覽</h3><div class="table-wrap"><table class="table" style="min-width:520px"><thead><tr><th>姓名</th><th>銀行代碼</th><th>銀行帳號</th><th>實領薪資</th></tr></thead><tbody id="resultPreview"></tbody></table></div><div class="export-actions"><button class="primary" onclick="exportPayrollExcel()">Excel 輸出</button><button class="secondary" onclick="exportPayrollPDF()">PDF 輸出</button></div></div></div></div>
-<div class="card"><h2>薪資記錄</h2><div class="table-wrap"><table class="table"><thead><tr><th>月份</th><th>員工</th><th>方式</th><th>應領</th><th>扣款</th><th>實領</th><th>操作</th></tr></thead><tbody id="payList"></tbody></table></div></div></section><section id="cash" class="section"><div class="page-head"><div><h1>七旗收支</h1><p>日期 → 支出 → 存入 → 存款餘額</p></div></div><div class="card"><h2>新增收支</h2><div class="grid"><div class="field"><label>日期</label><input id="cDate" type="text" inputmode="numeric" maxlength="5" placeholder="MM/DD"></div><div class="field"><label>支出</label><input id="cOut" type="number" value="0"></div><div class="field"><label>存入</label><input id="cIn" type="number" value="0"></div></div><div class="form-actions"><button id="saveCashBtn" onclick="saveCash()">儲存收支</button><button class="secondary" type="button" onclick="resetCashForm()">清除</button></div></div><div class="card"><h2>收支紀錄</h2><div class="table-wrap"><table class="table"><thead><tr><th>日期</th><th>支出</th><th>存入</th><th>存款餘額</th><th>操作</th></tr></thead><tbody id="cashList"></tbody></table></div></div></section>
+<div class="card"><h2>薪資記錄</h2><div class="table-wrap"><table class="table"><thead><tr><th>月份</th><th>員工</th><th>方式</th><th>應領</th><th>扣款</th><th>實領</th><th>操作</th></tr></thead><tbody id="payList"></tbody></table></div></div></section><section id="cash" class="section"><div class="page-head"><div><h1>七旗收支</h1><p>日期 → 支出 → 存入 → 存款餘額</p></div></div><div class="card"><h2>新增收支</h2><div class="grid"><div class="field"><label>日期</label><input id="cDate" type="text" inputmode="numeric" maxlength="5" placeholder="例如 0827"></div><div class="field"><label>支出</label><input id="cOut" type="number" value="0"></div><div class="field"><label>存入</label><input id="cIn" type="number" value="0"></div></div><div class="form-actions"><button id="saveCashBtn" onclick="saveCash()">儲存收支</button><button class="secondary" type="button" onclick="resetCashForm()">清除</button></div></div><div class="card"><h2>收支紀錄</h2><div class="table-wrap"><table class="table"><thead><tr><th>日期</th><th>支出</th><th>存入</th><th>存款餘額</th><th>操作</th></tr></thead><tbody id="cashList"></tbody></table></div></div></section>
 
 <section id="invoice" class="section">
 
@@ -684,19 +715,77 @@ function exportRows(){const m=isoMonth(document.getElementById("pMonth").value);
 function exportPayrollExcel(){const rows=exportRows();if(!rows.length)return alert("沒有可輸出的薪資結果");const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"薪資結果");XLSX.writeFile(wb,"七旗薪資結果.xlsx")}
 function exportPayrollPDF(){const rows=exportRows();if(!rows.length)return alert("沒有可輸出的薪資結果");const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:"landscape"});doc.text("Qichi Payroll",14,14);doc.autoTable({startY:20,head:[["Name","Bank Code","Account","Net Pay"]],body:rows.map(x=>[x.姓名,x.銀行代碼,x.銀行帳號,String(x.實領薪資)])});doc.save("qichi_payroll.pdf")}
 async function loadBanks(){const r=await sb.from("bank_accounts").select("*").order("created_at",{ascending:false});if(r.error){console.warn(r.error);return}bankAccounts=r.data||[];if(employees.length)renderEmployees()}
-async function loadCash(){const r=await sb.from("cash_transactions").select("*").order("transaction_date",{ascending:true});if(r.error){console.warn(r.error);return}let bal=0;const rows=(r.data||[]).map(x=>{bal+=Number(x.deposit||0)-Number(x.expense||0);return {...x,balance:bal}});document.getElementById("cashList").innerHTML=rows.slice().reverse().map(x=>`<tr><td>${esc(x.transaction_date)}</td><td>${money(x.expense)}</td><td>${money(x.deposit)}</td><td>${money(x.balance)}</td><td><button class="secondary" onclick="editCash(\'${x.id}\')">修改</button> <button class="danger" onclick="deleteCash(\'${x.id}\')">刪除</button></td></tr>`).join("")||`<tr><td colspan="5" class="empty">目前沒有收支資料</td></tr>`;document.getElementById("homeBalance").textContent=money(bal);document.getElementById("homeExpense").textContent=money((r.data||[]).reduce((s,x)=>s+Number(x.expense||0),0));document.getElementById("homeIncome").textContent=money((r.data||[]).reduce((s,x)=>s+Number(x.deposit||0),0))}
-function resetCashForm(){editingCashId=null;document.getElementById("cDate").value=today();document.getElementById("cOut").value=0;document.getElementById("cIn").value=0;const b=document.getElementById("saveCashBtn");if(b)b.textContent="儲存收支"}
-async function editCash(id){const r=await sb.from("cash_transactions").select("*").eq("id",id).maybeSingle();if(r.error||!r.data){alert("找不到這筆收支資料");return}const x=r.data;editingCashId=x.id;document.getElementById("cDate").value=String(x.transaction_date||"").slice(0,10);document.getElementById("cOut").value=Number(x.expense||0);document.getElementById("cIn").value=Number(x.deposit||0);const b=document.getElementById("saveCashBtn");if(b)b.textContent="儲存修改";document.getElementById("cash").scrollIntoView({behavior:"smooth",block:"start"})}
-async function saveCash(){const expense=Number(document.getElementById("cOut").value||0),deposit=Number(document.getElementById("cIn").value||0),transaction_date=document.getElementById("cDate").value;if(!transaction_date)return alert("請選擇日期");if(!expense&&!deposit)return alert("請輸入支出或存入");const payload={transaction_date,expense,deposit,summary:""};const r=editingCashId?await sb.from("cash_transactions").update(payload).eq("id",editingCashId):await sb.from("cash_transactions").insert(payload);if(r.error)return alert("收支儲存失敗："+r.error.message);resetCashForm();await loadCash()}
-async function deleteCash(id){if(!confirm("確定要刪除這筆收支資料嗎？"))return;const r=await sb.from("cash_transactions").delete().eq("id",id);if(r.error)return alert("收支刪除失敗："+r.error.message);if(String(editingCashId)===String(id))resetCashForm();await loadCash()}
-const boardDate=v=>v?String(v).slice(0,10):"";
 
+let editingCashOriginalDate="";
 
-let invProductMasters=[];
-async function loadInvProductMasters(){
- const r=await sb.from("invoice_product_masters").select("*").order("name");
- if(r.error){console.warn(r.error);return} invProductMasters=r.data||[];
- const s=document.getElementById("invProductMaster"); if(s)s.innerHTML='<option value="">請選擇</option>'+invProductMasters.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");
+function formatCashMD(){
+  const el=document.getElementById("cDate");
+  if(!el)return "";
+  let s=String(el.value||"").trim().replace(/[^\d]/g,"");
+  if(!s)return "";
+  if(s.length===3)s="0"+s;
+  if(s.length!==4)return "";
+  const mm=Number(s.slice(0,2)),dd=Number(s.slice(2,4));
+  if(mm<1||mm>12||dd<1||dd>31)return "";
+  const value=String(mm).padStart(2,"0")+"/"+String(dd).padStart(2,"0");
+  el.value=value;
+  return value;
+}
+function cashMDToISO(md){
+  const m=String(md||"").trim().match(/^(\d{2})\/(\d{2})$/);
+  if(!m)return "";
+  const year=(editingCashOriginalDate&&/^\d{4}-/.test(editingCashOriginalDate))
+    ? editingCashOriginalDate.slice(0,4)
+    : String(new Date().getFullYear());
+  return `${year}-${m[1]}-${m[2]}`;
+}
+function cashDisplayMD(v){
+  const m=String(v||"").match(/^\d{4}-(\d{2})-(\d{2})$/);
+  return m?`${m[1]}/${m[2]}`:String(v||"");
+}
+function cashIsChecked(summary){
+  return /\[\[checked:1\]\]/.test(String(summary||""));
+}
+function cashSetCheckedMarker(summary,checked){
+  const clean=String(summary||"").replace(/\s*\[\[checked:[01]\]\]\s*/g," ").trim();
+  return checked ? `${clean}${clean?" ":""}[[checked:1]]` : clean;
+}
+async function toggleCashChecked(id,checked){
+  const r=await sb.from("cash_transactions").select("summary").eq("id",id).maybeSingle();
+  if(r.error||!r.data){alert("核對狀態讀取失敗");return}
+  const summary=cashSetCheckedMarker(r.data.summary||"",checked);
+  const u=await sb.from("cash_transactions").update({summary}).eq("id",id);
+  if(u.error){alert("核對狀態儲存失敗："+u.error.message);return}
+  await loadCash();
+}
+
+async function loadCash(){
+  const r=await sb.from("cash_transactions").select("*").order("transaction_date",{ascending:true});
+  if(r.error){console.warn(r.error);return}
+  let bal=0;
+  const rows=(r.data||[]).map(x=>{
+    bal+=Number(x.deposit||0)-Number(x.expense||0);
+    return {...x,balance:bal}
+  });
+  document.getElementById("cashList").innerHTML=rows.slice().reverse().map(x=>{
+    const checked=cashIsChecked(x.summary);
+    return `<tr>
+      <td>${esc(cashDisplayMD(x.transaction_date))}</td>
+      <td>${money(x.expense)}</td>
+      <td>${money(x.deposit)}</td>
+      <td>${money(x.balance)}</td>
+      <td>
+        <div class="cash-action-group">
+          <button type="button" class="cash-check-btn ${checked?"checked":""}" title="${checked?"已核對／已收到單據":"尚未核對／尚未收到單據"}" onclick="toggleCashChecked('${x.id}',${checked?"false":"true"})">${checked?"✓":"□"}</button>
+          <button class="secondary" onclick="editCash('${x.id}')">修改</button>
+          <button class="danger" onclick="deleteCash('${x.id}')">刪除</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join("")||`<tr><td colspan="5" class="empty">目前沒有收支資料</td></tr>`;
+  document.getElementById("homeBalance").textContent=money(bal);
+  document.getElementById("homeExpense").textContent=money((r.data||[]).reduce((s,x)=>s+Number(x.expense||0),0));
+  document.getElementById("homeIncome").textContent=money((r.data||[]).reduce((s,x)=>s+Number(x.deposit||0),0));
 }
 function pickInvProduct(){const id=document.getElementById("invProductMaster").value,x=invProductMasters.find(v=>String(v.id)===String(id));if(x)addInvoiceItem({name:x.name,qty:1,price:0})}
 async function addInvProductMaster(){const name=prompt("新增品名");if(!name?.trim())return;const r=await sb.from("invoice_product_masters").insert({name:name.trim()});if(r.error)return alert(r.error.message);await loadInvProductMasters()}
@@ -874,6 +963,32 @@ async function saveBoard(){const name=document.getElementById("bbName").value.tr
 async function deleteRow(table,id,refresh){if(!confirm("確定要刪除這筆資料嗎？"))return;const r=await sb.from(table).delete().eq("id",id);if(r.error)return alert("刪除失敗："+r.error.message);await refresh();updateHome()}
 function updateHome(){document.getElementById("homeEmployees").textContent=employees.length}
 sb.auth.getSession().then(({data})=>{if(data.session)startApp(data.session.user)});
+
+document.addEventListener("DOMContentLoaded",()=>{
+  const d=document.getElementById("cDate");
+  d?.addEventListener("blur",formatCashMD);
+  d?.addEventListener("keydown",e=>{
+    if(e.key==="Tab")formatCashMD();
+    if(e.key==="Enter"){
+      e.preventDefault();
+      formatCashMD();
+      const out=Number(document.getElementById("cOut")?.value||0);
+      const inp=Number(document.getElementById("cIn")?.value||0);
+      if(out||inp)saveCash();
+      else document.getElementById("cOut")?.focus();
+    }
+  });
+
+  ["cOut","cIn"].forEach(id=>{
+    document.getElementById(id)?.addEventListener("keydown",e=>{
+      if(e.key==="Enter"){
+        e.preventDefault();
+        saveCash();
+      }
+    });
+  });
+});
+
 document.getElementById("ingredientDate")?.addEventListener("blur",formatIngredientDate);document.getElementById("ingredientDate")?.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key==="Tab")formatIngredientDate()});loadIngredientRecords();
 
 
