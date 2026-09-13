@@ -896,7 +896,7 @@ window.addEventListener("DOMContentLoaded",()=>{
 const SUPABASE_URL="https://zyusqrmayrucesijpmls.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_9EDbdx3Xmm87kqpI8lyPIA_1QDwzZdk";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);let employees=[];let editingEmployeeId=null;let bankAccounts=[];let editingBankId=null;let boardEmployees=[];let editingBoardId=null;let editingAttendanceId=null;let attendanceRecords=[];let editingCashId=null;let invoiceRecords=[];let editingInvoiceId=null;
-const isoDate=v=>{let x=String(v||"").trim().replace(/[.\-]/g,"/");if(/^\d{8}$/.test(x))x=x.slice(0,4)+"/"+x.slice(4,6)+"/"+x.slice(6,8);const m=x.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);if(!m)return "";const y=+m[1],mo=+m[2],d=+m[3],dt=new Date(y,mo-1,d);if(dt.getFullYear()!==y||dt.getMonth()!==mo-1||dt.getDate()!==d)return "";return `${m[1]}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`;};const isoMonth=v=>{const x=String(v||"").trim().replace(/[.\-]/g,"/");const m=x.match(/^(\d{4})\/(\d{1,2})$/);return m?`${m[1]}-${m[2].padStart(2,"0")}`:""};const displayDate=v=>String(v||"").slice(0,10).replace(/-/g,"/");const displayMonth=v=>String(v||"").slice(0,7).replace(/-/g,"/");let payrollRecords=[];let currentPayrollPreview=null;const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));const money=n=>new Intl.NumberFormat("zh-TW",{style:"currency",currency:"TWD",maximumFractionDigits:0}).format(Number(n||0));const today=()=>new Date().toISOString().slice(0,10).replace(/-/g,"/");const monthNow=()=>new Date().toISOString().slice(0,7).replace(/-/g,"/");
+const isoDate=v=>{let x=String(v||"").trim().replace(/[.\-]/g,"/");if(/^\d{8}$/.test(x))x=x.slice(0,4)+"/"+x.slice(4,6)+"/"+x.slice(6,8);const m=x.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);if(!m)return "";const y=+m[1],mo=+m[2],d=+m[3],dt=new Date(y,mo-1,d);if(dt.getFullYear()!==y||dt.getMonth()!==mo-1||dt.getDate()!==d)return "";return `${m[1]}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`;};const isoMonth=v=>{const x=String(v||"").trim().replace(/[.\-]/g,"/");const m=x.match(/^(\d{4})\/(\d{1,2})$/);return m?`${m[1]}-${m[2].padStart(2,"0")}`:""};const displayDate=v=>String(v||"").slice(0,10).replace(/-/g,"/");const displayMonth=v=>String(v||"").slice(0,7).replace(/-/g,"/");let payrollRecords=[];let currentPayrollPreview=null;const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));const money=n=>new Intl.NumberFormat("zh-TW",{style:"currency",currency:"TWD",maximumFractionDigits:0}).format(Number(n||0));const cashMoney=n=>new Intl.NumberFormat("zh-TW",{maximumFractionDigits:0}).format(Number(n||0));const today=()=>new Date().toISOString().slice(0,10).replace(/-/g,"/");const monthNow=()=>new Date().toISOString().slice(0,7).replace(/-/g,"/");
 document.getElementById("aDate").value=today();document.getElementById("cDate").value=today();document.getElementById("pMonth").value=monthNow();document.getElementById("attFilterMonth").value=monthNow();document.getElementById("aIn").value="";document.getElementById("aOut").value="";document.getElementById("pEmployee").addEventListener("change",()=>{currentPayrollPreview=null;updateAttendanceSummary()});document.getElementById("pMonth").addEventListener("change",updateAttendanceSummary);document.getElementById("pMonth").addEventListener("blur",updateAttendanceSummary);document.getElementById("attFilterEmployee").addEventListener("change",renderAttendanceList);document.getElementById("attFilterMonth").addEventListener("change",renderAttendanceList);document.getElementById("attFilterMonth").addEventListener("blur",renderAttendanceList);
 function showPage(id,btn){document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));btn.classList.add("active")}
 function msg(t){const e=document.getElementById("loginMsg");e.textContent=t;e.classList.remove("hidden")}
@@ -1189,9 +1189,9 @@ async function loadCash(){
     body.innerHTML=withBalance.map(x=>`
       <tr>
         <td>${esc(cashDisplayMD(x.transaction_date))}</td>
-        <td>${money(x.expense)}</td>
-        <td>${money(x.deposit)}</td>
-        <td>${money(x.balance)}</td>
+        <td>${cashMoney(x.expense)}</td>
+        <td>${cashMoney(x.deposit)}</td>
+        <td>${cashMoney(x.balance)}</td>
         <td>${esc(x.summary||"")}</td>
         <td>
           <div class="cash-action-group">
@@ -1211,9 +1211,9 @@ async function loadCash(){
   const hb=document.getElementById("homeBalance");
   const he=document.getElementById("homeExpense");
   const hi=document.getElementById("homeIncome");
-  if(hb)hb.textContent=money(bal);
-  if(he)he.textContent=money(totalExpense);
-  if(hi)hi.textContent=money(totalDeposit);
+  if(hb)hb.textContent=cashMoney(bal);
+  if(he)he.textContent=cashMoney(totalExpense);
+  if(hi)hi.textContent=cashMoney(totalDeposit);
 }
 
 function pickInvProduct(){const id=document.getElementById("invProductMaster").value,x=invProductMasters.find(v=>String(v.id)===String(id));if(x)addInvoiceItem({name:x.name,qty:1,price:0})}
