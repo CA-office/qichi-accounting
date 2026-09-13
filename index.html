@@ -545,7 +545,7 @@ window.addEventListener("DOMContentLoaded",()=>{
 <style id="cash-mobile-layout-fix">
 #cash .table th,
 #cash .table td{text-align:center}
-#cash .table td:nth-child(4){text-align:left;white-space:normal;min-width:180px}
+#cash .table td:nth-child(5){text-align:center;white-space:normal;min-width:180px}
 #cash .cash-action-group{display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
 
 @media(max-width:700px){
@@ -730,6 +730,7 @@ window.addEventListener("DOMContentLoaded",()=>{
           <th>日期</th>
           <th>支出</th>
           <th>收入</th>
+          <th>存款餘額</th>
           <th>摘要</th>
           <th>操作</th>
         </tr>
@@ -1040,19 +1041,24 @@ function exportCashExcel(){
   });
   if(!rows.length)return alert("目前沒有收支紀錄可下載");
 
+  let exportBalance=0;
   const aoa=[
-    ["日期","支出","收入","摘要","核對"],
-    ...rows.map(x=>[
-      cashDisplayMD(x.date),
-      Number(x.expense||0),
-      Number(x.deposit||0),
-      String(x.summary||""),
-      x.checked?"✓":""
-    ])
+    ["日期","支出","收入","存款餘額","摘要","核對"],
+    ...rows.map(x=>{
+      exportBalance+=Number(x.deposit||0)-Number(x.expense||0);
+      return [
+        cashDisplayMD(x.date),
+        Number(x.expense||0),
+        Number(x.deposit||0),
+        exportBalance,
+        String(x.summary||""),
+        x.checked?"✓":""
+      ];
+    })
   ];
 
   const ws=XLSX.utils.aoa_to_sheet(aoa);
-  ws["!cols"]=[{wch:12},{wch:16},{wch:16},{wch:36},{wch:10}];
+  ws["!cols"]=[{wch:12},{wch:16},{wch:16},{wch:18},{wch:36},{wch:10}];
 
   const range=XLSX.utils.decode_range(ws["!ref"]);
   for(let R=range.s.r;R<=range.e.r;R++){
@@ -1063,10 +1069,10 @@ function exportCashExcel(){
       cell.s=cell.s||{};
       cell.s.font={name:"Noto Sans HK",sz:11,bold:R===0};
       cell.s.alignment={
-        horizontal:C===3?"left":"center",
+        horizontal:"center",
         vertical:"center"
       };
-      if(R>0 && (C===1 || C===2)){
+      if(R>0 && (C===1 || C===2 || C===3)){
         cell.z='#,##0';
       }
     }
@@ -1074,7 +1080,7 @@ function exportCashExcel(){
 
   // Excel 開啟時凍結第一列標題（支援可讀取此屬性的 Excel 產生器）
   ws["!freeze"]={xSplit:0,ySplit:1,topLeftCell:"A2",activePane:"bottomLeft",state:"frozen"};
-  ws["!autofilter"]={ref:`A1:E${rows.length+1}`};
+  ws["!autofilter"]={ref:`A1:F${rows.length+1}`};
 
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,"收支紀錄");
@@ -1102,6 +1108,7 @@ function loadCash(){
         <td>${esc(cashDisplayMD(x.date))}</td>
         <td>${money(x.expense)}</td>
         <td>${money(x.deposit)}</td>
+        <td>${money(x.balance)}</td>
         <td>${esc(x.summary||"")}</td>
         <td>
           <div class="cash-action-group">
@@ -1113,7 +1120,7 @@ function loadCash(){
             <button class="danger" onclick="deleteCash('${x.id}')">刪除</button>
           </div>
         </td>
-      </tr>`).join("") || `<tr><td colspan="5" class="empty">目前沒有收支資料</td></tr>`;
+      </tr>`).join("") || `<tr><td colspan="6" class="empty">目前沒有收支資料</td></tr>`;
   }
 
   const totalExpense=rows.reduce((s,x)=>s+Number(x.expense||0),0);
