@@ -750,6 +750,57 @@ function cashSetCheckedMarker(summary,checked){
   const clean=String(summary||"").replace(/\s*\[\[checked:[01]\]\]\s*/g," ").trim();
   return checked ? `${clean}${clean?" ":""}[[checked:1]]` : clean;
 }
+function resetCashForm(){
+  editingCashId=null;
+  editingCashOriginalDate="";
+  const d=document.getElementById("cDate"),o=document.getElementById("cOut"),i=document.getElementById("cIn");
+  if(d)d.value="";
+  if(o)o.value=0;
+  if(i)i.value=0;
+  const b=document.getElementById("saveCashBtn"); if(b)b.textContent="儲存收支";
+}
+async function saveCash(){
+  const md=formatCashMD();
+  if(!md)return alert("日期請輸入 MM/DD，例如 08/27 或 0827");
+  const expense=Number(document.getElementById("cOut")?.value||0);
+  const deposit=Number(document.getElementById("cIn")?.value||0);
+  if(!expense&&!deposit)return alert("請輸入支出或存入金額");
+  const transaction_date=cashMDToISO(md);
+  let summary=null;
+  if(editingCashId){
+    const old=await sb.from("cash_transactions").select("summary").eq("id",editingCashId).maybeSingle();
+    if(old.data)summary=old.data.summary||null;
+  }
+  const payload={transaction_date,expense,deposit};
+  if(editingCashId)payload.summary=summary;
+  const r=editingCashId
+    ? await sb.from("cash_transactions").update(payload).eq("id",editingCashId)
+    : await sb.from("cash_transactions").insert(payload);
+  if(r.error)return alert("收支儲存失敗："+r.error.message);
+  resetCashForm();
+  await loadCash();
+  document.getElementById("cDate")?.focus();
+}
+async function editCash(id){
+  const r=await sb.from("cash_transactions").select("*").eq("id",id).maybeSingle();
+  if(r.error||!r.data)return alert("收支資料讀取失敗");
+  const x=r.data;
+  editingCashId=x.id;
+  editingCashOriginalDate=x.transaction_date||"";
+  document.getElementById("cDate").value=cashDisplayMD(x.transaction_date);
+  document.getElementById("cOut").value=Number(x.expense||0);
+  document.getElementById("cIn").value=Number(x.deposit||0);
+  document.getElementById("saveCashBtn").textContent="儲存修改";
+  document.getElementById("cDate")?.focus();
+}
+async function deleteCash(id){
+  if(!confirm("確定刪除這筆收支紀錄嗎？"))return;
+  const r=await sb.from("cash_transactions").delete().eq("id",id);
+  if(r.error)return alert("刪除失敗："+r.error.message);
+  if(String(editingCashId)===String(id))resetCashForm();
+  await loadCash();
+}
+
 async function toggleCashChecked(id,checked){
   const r=await sb.from("cash_transactions").select("summary").eq("id",id).maybeSingle();
   if(r.error||!r.data){alert("核對狀態讀取失敗");return}
