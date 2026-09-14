@@ -726,9 +726,9 @@ window.addEventListener("DOMContentLoaded",()=>{
 @media(max-width:700px){#attendance .table{width:28cm !important;min-width:28cm !important}#attendance .table th,#attendance .table td{width:2cm !important;min-width:2cm !important;max-width:2cm !important}}
 </style>
 
-<style id="payroll-preview-width-20cm">
-#payroll .preview-grid{grid-template-columns:20cm 20cm;overflow-x:auto;align-items:start}
-#payroll .preview-box{width:20cm;max-width:20cm}
+<style id="payroll-preview-width-10cm">
+#payroll .preview-grid{grid-template-columns:10cm 10cm;overflow-x:auto;align-items:start}
+#payroll .preview-box{width:10cm;max-width:10cm}
 @media(max-width:700px){
   #payroll .preview-grid{display:block;overflow-x:visible}
   #payroll .preview-box{width:100%;max-width:100%}
@@ -738,16 +738,52 @@ window.addEventListener("DOMContentLoaded",()=>{
 <style id="qichi-all-employees-width-sync-20260914">
 /* 全員共用：不依員工姓名判斷，打卡/件數明細每欄 2cm */
 #attendance .table th,#attendance .table td{width:2cm!important;min-width:2cm!important;max-width:2cm!important;}
-/* 全員共用：薪資紀錄預覽、薪資結果預覽各 20cm */
-#payroll .preview-grid{grid-template-columns:20cm 20cm!important;}
-#payroll .preview-box{width:20cm!important;min-width:20cm!important;max-width:20cm!important;}
+/* 全員共用：薪資紀錄預覽、薪資結果預覽各 10cm */
+#payroll .preview-grid{grid-template-columns:10cm 10cm!important;}
+#payroll .preview-box{width:10cm!important;min-width:10cm!important;max-width:10cm!important;}
 @media(max-width:700px){
   #attendance .table th,#attendance .table td{width:2cm!important;min-width:2cm!important;max-width:2cm!important;}
-  #payroll .preview-grid{display:grid!important;grid-template-columns:20cm 20cm!important;width:max-content!important;}
-  #payroll .preview-box{width:20cm!important;min-width:20cm!important;max-width:20cm!important;}
+  #payroll .preview-grid{display:grid!important;grid-template-columns:10cm 10cm!important;width:max-content!important;}
+  #payroll .preview-box{width:10cm!important;min-width:10cm!important;max-width:10cm!important;}
   #payroll .card:has(.preview-grid){overflow-x:auto;-webkit-overflow-scrolling:touch;}
 }
 </style>
+
+<style id="attendance-date-employee-4cm-20260914">
+/* 全員共用：日期、員工 4cm；其餘打卡/件數明細欄位維持 2cm */
+#attendance .table th:nth-child(1),#attendance .table td:nth-child(1),
+#attendance .table th:nth-child(2),#attendance .table td:nth-child(2){
+  width:4cm!important;min-width:4cm!important;max-width:4cm!important;
+}
+#attendance .table{width:32cm!important;min-width:32cm!important;table-layout:fixed!important;}
+@media(max-width:700px){
+  #attendance .table th:nth-child(1),#attendance .table td:nth-child(1),
+  #attendance .table th:nth-child(2),#attendance .table td:nth-child(2){
+    width:4cm!important;min-width:4cm!important;max-width:4cm!important;
+  }
+  #attendance .table{width:32cm!important;min-width:32cm!important;}
+}
+</style>
+
+<style id="attendance-10cols-width-20260914">
+#attendance .table{width:24cm!important;min-width:24cm!important;table-layout:fixed!important;}
+#attendance .table th,#attendance .table td{
+  width:2cm!important;min-width:2cm!important;max-width:2cm!important;
+  text-align:center!important;white-space:normal!important;overflow-wrap:anywhere;word-break:break-word;
+}
+#attendance .table th:nth-child(1),#attendance .table td:nth-child(1),
+#attendance .table th:nth-child(2),#attendance .table td:nth-child(2){
+  width:4cm!important;min-width:4cm!important;max-width:4cm!important;
+}
+@media(max-width:700px){
+  #attendance .table{width:24cm!important;min-width:24cm!important;}
+  #attendance .table th:nth-child(1),#attendance .table td:nth-child(1),
+  #attendance .table th:nth-child(2),#attendance .table td:nth-child(2){
+    width:4cm!important;min-width:4cm!important;max-width:4cm!important;
+  }
+}
+</style>
+
 </head><body>
 <div id="login" class="login"><div class="login-card"><div class="brand">七旗公司</div><form id="loginForm"><div class="field"><label>Email</label><input id="email" type="email" autocomplete="username"></div><div class="field"><label>密碼</label><input id="password" type="password" autocomplete="current-password"></div><button class="primary" type="submit">登入</button></form><div id="loginMsg" class="notice hidden" style="margin-top:12px"></div></div></div>
 <div id="app" class="hidden"><header class="topbar"><div class="top-title">七旗公司｜內帳管理系統</div><div class="top-user"><span id="userEmail"></span><button class="secondary" onclick="logout()">登出</button></div></header><div class="layout"><aside class="sidebar"><nav class="nav">
@@ -767,7 +803,7 @@ window.addEventListener("DOMContentLoaded",()=>{
 <div class="field"><label>銀行代碼</label><input id="eBankCode"></div><div class="field"><label>銀行帳號</label><input id="eAccountNo"></div>
 <div class="field"><label>備註</label><input id="eNote"></div></div><div class="form-actions"><button onclick="saveEmployee()">儲存員工</button><button class="secondary" onclick="resetEmployeeForm()">清除</button></div></div>
 <div class="card"><h2>員工列表</h2><div class="table-wrap"><table class="table" style="min-width:1500px"><thead><tr><th>姓名</th><th>計薪方式</th><th>月薪</th><th>單價</th><th>時薪</th><th>加給</th><th>銀行代碼</th><th>銀行帳號</th><th>備註</th><th>操作</th></tr></thead><tbody id="empList"></tbody></table></div></div></section>
-<section id="attendance" class="section"><div class="page-head"><div><h1>七旗薪資｜打卡/件數紀錄</h1><p>記錄出勤、請假、遲到與扣款</p></div></div><div class="card"><h2 id="attTitle">新增打卡/件數</h2><div class="grid"><div class="field"><label>員工</label><select id="aEmployee"></select></div><div class="field"><label>日期</label><input id="aDate" type="text" inputmode="numeric" placeholder="例如：2026/09/01"></div><div class="field"><label>上班</label><select id="aIn"><option value="" selected>請選擇／留空</option><option value="08:30">08:30</option><option value="08:00">08:00</option><option value="05:00">05:00</option><option value="05:30">05:30</option><option value="06:00">06:00</option><option value="06:30">06:30</option><option value="07:00">07:00</option><option value="07:30">07:30</option><option value="09:00">09:00</option><option value="09:30">09:30</option><option value="10:00">10:00</option><option value="10:30">10:30</option><option value="11:00">11:00</option><option value="11:30">11:30</option><option value="12:00">12:00</option><option value="12:30">12:30</option><option value="13:00">13:00</option><option value="13:30">13:30</option><option value="14:00">14:00</option><option value="14:30">14:30</option></select></div><div class="field"><label>下班</label><select id="aOut"><option value="" selected>請選擇／留空</option><option value="17:30">17:30</option><option value="12:00">12:00</option><option value="12:30">12:30</option><option value="13:00">13:00</option><option value="13:30">13:30</option><option value="14:00">14:00</option><option value="14:30">14:30</option><option value="15:00">15:00</option><option value="15:30">15:30</option><option value="16:00">16:00</option><option value="16:30">16:30</option><option value="17:00">17:00</option><option value="18:00">18:00</option><option value="18:30">18:30</option><option value="19:00">19:00</option><option value="19:30">19:30</option><option value="20:00">20:00</option><option value="20:30">20:30</option><option value="21:00">21:00</option><option value="21:30">21:30</option><option value="22:00">22:00</option><option value="22:30">22:30</option><option value="23:00">23:00</option><option value="23:30">23:30</option></select></div><div class="field"><label>狀態</label><select id="aStatus"><option>出勤</option><option>請假</option><option>遲到</option><option>缺勤</option></select></div><div class="field"><label>件數</label><input id="aQty" type="number" min="0" step="1" value="0"></div><div class="field"><label>單件金額</label><input id="aPieceRate" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>時薪</label><input id="aHourlyRate" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>備註</label><input id="aNote"></div></div><div class="form-actions"><button id="saveAttendanceBtn" type="button" onclick="saveAttendance()">儲存打卡</button><button class="secondary" type="button" onclick="resetAttendanceForm()">清除</button></div></div><div class="card"><h2>打卡/件數明細</h2>
+<section id="attendance" class="section"><div class="page-head"><div><h1>七旗薪資｜打卡/件數紀錄</h1><p>記錄出勤、請假、遲到與扣款</p></div></div><div class="card"><h2 id="attTitle">新增打卡/件數</h2><div class="grid"><div class="field"><label>員工</label><select id="aEmployee"></select></div><div class="field"><label>日期</label><input id="aDate" type="text" inputmode="numeric" placeholder="例如：2026/09/01"></div><div class="field"><label>上班</label><select id="aIn"><option value="" selected>請選擇／留空</option><option value="08:30">08:30</option><option value="08:00">08:00</option><option value="05:00">05:00</option><option value="05:30">05:30</option><option value="06:00">06:00</option><option value="06:30">06:30</option><option value="07:00">07:00</option><option value="07:30">07:30</option><option value="09:00">09:00</option><option value="09:30">09:30</option><option value="10:00">10:00</option><option value="10:30">10:30</option><option value="11:00">11:00</option><option value="11:30">11:30</option><option value="12:00">12:00</option><option value="12:30">12:30</option><option value="13:00">13:00</option><option value="13:30">13:30</option><option value="14:00">14:00</option><option value="14:30">14:30</option></select></div><div class="field"><label>下班</label><select id="aOut"><option value="" selected>請選擇／留空</option><option value="17:30">17:30</option><option value="12:00">12:00</option><option value="12:30">12:30</option><option value="13:00">13:00</option><option value="13:30">13:30</option><option value="14:00">14:00</option><option value="14:30">14:30</option><option value="15:00">15:00</option><option value="15:30">15:30</option><option value="16:00">16:00</option><option value="16:30">16:30</option><option value="17:00">17:00</option><option value="18:00">18:00</option><option value="18:30">18:30</option><option value="19:00">19:00</option><option value="19:30">19:30</option><option value="20:00">20:00</option><option value="20:30">20:30</option><option value="21:00">21:00</option><option value="21:30">21:30</option><option value="22:00">22:00</option><option value="22:30">22:30</option><option value="23:00">23:00</option><option value="23:30">23:30</option></select></div><div class="field"><label>狀態</label><select id="aStatus"><option>出勤</option><option>請假</option><option>遲到</option><option>缺勤</option></select></div><div class="field"><label>件數</label><input id="aQty" type="number" min="0" step="1" value="0"></div><div class="field"><label>時薪</label><input id="aHourlyRate" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>備註</label><input id="aNote"></div></div><div class="form-actions"><button id="saveAttendanceBtn" type="button" onclick="saveAttendance()">儲存打卡</button><button class="secondary" type="button" onclick="resetAttendanceForm()">清除</button></div></div><div class="card"><h2>打卡/件數明細</h2>
 <div class="grid" style="margin-bottom:12px">
   <div class="field"><label>查看月份</label><input id="attFilterMonth" type="text" inputmode="numeric" placeholder="例如：2026/09"></div>
   <div class="field"><label>查看員工</label><select id="attFilterEmployee"></select></div>
@@ -778,7 +814,7 @@ window.addEventListener("DOMContentLoaded",()=>{
   <button class="primary" onclick="exportAttendanceExcel()">Excel 匯出</button>
   <button class="secondary" onclick="exportAttendancePDF()">PDF 匯出</button>
 </div>
-<div class="table-wrap"><table class="table"><thead><tr><th>日期</th><th>員工</th><th>上班</th><th>下班</th><th>工作時數</th><th>扣款</th><th>件數</th><th>單件</th><th>金額</th><th>時薪</th><th>狀態</th><th>備註</th><th>修改</th><th>刪除</th></tr></thead><tbody id="attList"></tbody></table></div></div></section><section id="payroll" class="section"><div class="page-head"><div><h1>七旗薪資｜薪資結算</h1><p>連動員工薪資設定、銀行資料與當月打卡／件數紀錄</p></div></div><div class="card"><div class="grid"><div class="field"><label>月份（可手動輸入）</label><input id="pMonth" type="text" inputmode="numeric" placeholder="例如：2026/09"></div><div class="field"><label>員工</label><select id="pEmployee"></select></div></div><div id="attendanceSummary" class="notice" style="margin-top:12px">選擇員工與月份後，自動讀取該月打卡紀錄。</div></div>
+<div class="table-wrap"><table class="table"><thead><tr id="attListHead"><th>日期</th><th>員工</th><th>件數</th><th>上班</th><th>下班</th><th>工作時數</th><th>扣款</th><th>時薪</th><th>修改</th><th>刪除</th></tr></thead><tbody id="attList"></tbody></table></div></div></section><section id="payroll" class="section"><div class="page-head"><div><h1>七旗薪資｜薪資結算</h1><p>連動員工薪資設定、銀行資料與當月打卡／件數紀錄</p></div></div><div class="card"><div class="grid"><div class="field"><label>月份（可手動輸入）</label><input id="pMonth" type="text" inputmode="numeric" placeholder="例如：2026/09"></div><div class="field"><label>員工</label><select id="pEmployee"></select></div></div><div id="attendanceSummary" class="notice" style="margin-top:12px">選擇員工與月份後，自動讀取該月打卡紀錄。</div></div>
 <div class="card"><h2>單計帳制</h2><div class="notice">自動讀取員工設定與當月打卡／件數紀錄。</div><div class="form-actions"><button onclick="calculatePiece()">計算</button><button class="secondary" onclick="savePayrollPreview('piece')">儲存</button></div><div id="pieceResult" class="notice" style="margin-top:12px">尚未計算</div></div>
 <div class="card"><h2>月薪制</h2><div class="notice">請假扣薪採 24 天制：日薪＝月薪 ÷ 24；請假時數依每日 8 小時計算。</div><div class="form-actions"><button onclick="calculateMonthly()">計算</button><button class="secondary" onclick="savePayrollPreview('monthly')">儲存</button></div><div id="monthlyResult" class="notice" style="margin-top:12px">尚未計算</div></div>
 <div class="card"><h2>薪資預覽</h2><div class="preview-grid"><div class="preview-box"><h3>薪資紀錄預覽</h3><div id="recordPreview" class="empty">請先選擇月份與員工</div></div><div class="preview-box"><h3>薪資結果預覽</h3><div class="table-wrap"><table class="table" style="min-width:520px"><thead><tr><th>姓名</th><th>銀行代碼</th><th>銀行帳號</th><th>實領薪資</th></tr></thead><tbody id="resultPreview"></tbody></table></div><div class="export-actions"><button class="primary" onclick="exportPayrollExcel()">Excel 輸出</button><button class="secondary" onclick="exportPayrollPDF()">PDF 輸出</button></div></div></div></div>
@@ -928,7 +964,7 @@ window.addEventListener("DOMContentLoaded",()=>{
 const SUPABASE_URL="https://zyusqrmayrucesijpmls.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_9EDbdx3Xmm87kqpI8lyPIA_1QDwzZdk";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);let employees=[];let editingEmployeeId=null;let bankAccounts=[];let editingBankId=null;let boardEmployees=[];let editingBoardId=null;let editingAttendanceId=null;let attendanceRecords=[];let editingCashId=null;let invoiceRecords=[];let editingInvoiceId=null;
-const isoDate=v=>{let x=String(v||"").trim().replace(/[.\-]/g,"/");if(/^\d{8}$/.test(x))x=x.slice(0,4)+"/"+x.slice(4,6)+"/"+x.slice(6,8);const m=x.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);if(!m)return "";const y=+m[1],mo=+m[2],d=+m[3],dt=new Date(y,mo-1,d);if(dt.getFullYear()!==y||dt.getMonth()!==mo-1||dt.getDate()!==d)return "";return `${m[1]}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`;};const isoMonth=v=>{const x=String(v||"").trim().replace(/[.\-]/g,"/");const m=x.match(/^(\d{4})\/(\d{1,2})$/);return m?`${m[1]}-${m[2].padStart(2,"0")}`:""};const displayDate=v=>String(v||"").slice(0,10).replace(/-/g,"/");const displayMonth=v=>String(v||"").slice(0,7).replace(/-/g,"/");let payrollRecords=[];let currentPayrollPreview=null;const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));const money=n=>new Intl.NumberFormat("zh-TW",{style:"currency",currency:"TWD",maximumFractionDigits:0}).format(Number(n||0));const cashMoney=n=>new Intl.NumberFormat("zh-TW",{maximumFractionDigits:0}).format(Number(n||0));const today=()=>new Date().toISOString().slice(0,10).replace(/-/g,"/");const monthNow=()=>new Date().toISOString().slice(0,7).replace(/-/g,"/");
+const isoDate=v=>{let x=String(v||"").trim().replace(/[.\-]/g,"/");if(/^\d{8}$/.test(x))x=x.slice(0,4)+"/"+x.slice(4,6)+"/"+x.slice(6,8);const m=x.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);if(!m)return "";const y=+m[1],mo=+m[2],d=+m[3],dt=new Date(y,mo-1,d);if(dt.getFullYear()!==y||dt.getMonth()!==mo-1||dt.getDate()!==d)return "";return `${m[1]}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`;};const isoMonth=v=>{const x=String(v||"").trim().replace(/[.\-]/g,"/");const m=x.match(/^(\d{4})\/(\d{1,2})$/);return m?`${m[1]}-${m[2].padStart(2,"0")}`:""};const displayDate=v=>String(v||"").slice(0,10).replace(/-/g,"/");const displayMD=v=>{const d=displayDate(v);return /^\d{4}\/\d{2}\/\d{2}$/.test(d)?d.slice(5):d;};const displayMonth=v=>String(v||"").slice(0,7).replace(/-/g,"/");let payrollRecords=[];let currentPayrollPreview=null;const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));const money=n=>new Intl.NumberFormat("zh-TW",{style:"currency",currency:"TWD",maximumFractionDigits:0}).format(Number(n||0));const cashMoney=n=>new Intl.NumberFormat("zh-TW",{maximumFractionDigits:0}).format(Number(n||0));const today=()=>new Date().toISOString().slice(0,10).replace(/-/g,"/");const monthNow=()=>new Date().toISOString().slice(0,7).replace(/-/g,"/");
 document.getElementById("aDate").value=today();document.getElementById("cDate").value=today();document.getElementById("pMonth").value=monthNow();document.getElementById("attFilterMonth").value=monthNow();document.getElementById("aIn").value="";document.getElementById("aOut").value="";document.getElementById("pEmployee").addEventListener("change",()=>{currentPayrollPreview=null;updateAttendanceSummary()});document.getElementById("pMonth").addEventListener("change",updateAttendanceSummary);document.getElementById("pMonth").addEventListener("blur",updateAttendanceSummary);document.getElementById("attFilterEmployee").addEventListener("change",renderAttendanceList);document.getElementById("attFilterMonth").addEventListener("change",renderAttendanceList);document.getElementById("attFilterMonth").addEventListener("blur",renderAttendanceList);
 function showPage(id,btn){document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));btn.classList.add("active")}
 function msg(t){const e=document.getElementById("loginMsg");e.textContent=t;e.classList.remove("hidden")}
@@ -959,14 +995,86 @@ function calcWorkedHours(clockIn,clockOut,status="出勤"){
 }
 function monthlyHourRate(employeeId){const e=employees.find(v=>String(v.id)===String(employeeId));const base=Number(e?.base_salary||0);return Math.floor((base/24)/8)||0}
 function autoAttendanceDeduction(x){const e=employees.find(v=>String(v.id)===String(x.employee_id));if(!e||e.pay_type!=="monthly")return 0;const h=calcWorkedHours(x.clock_in,x.clock_out,x.status);return Math.max(0,8-h)*monthlyHourRate(x.employee_id)}
-function renderAttendanceList(){const rows=filteredAttendanceRows();document.getElementById("attList").innerHTML=rows.map(x=>{const h=calcWorkedHours(x.clock_in,x.clock_out,x.status),d=autoAttendanceDeduction(x),qty=Number(x.piecework_qty||0),rate=Number(x.piecework_rate||0),amt=qty*rate;return `<tr><td>${esc(displayDate(x.work_date))}</td><td>${esc(x.employees?.name||"")}</td><td>${esc(x.clock_in||"")}</td><td>${esc(x.clock_out||"")}</td><td>${h}</td><td>${money(d)}</td><td>${qty}</td><td>${money(rate)}</td><td>${money(amt)}</td><td>${money(x.hourly_rate)}</td><td>${esc(x.status||"")}</td><td>${esc(x.note||"")}</td><td><button class="secondary" onclick="editAttendance('${x.id}')">修改</button></td><td><button class="danger" onclick="deleteRow('attendance_records','${x.id}',loadAttendance)">刪除</button></td></tr>`}).join("")||`<tr><td colspan="14" class="empty">目前沒有符合條件的打卡/件數資料</td></tr>`;const qty=rows.reduce((a,x)=>a+Number(x.piecework_qty||0),0),hrs=rows.reduce((a,x)=>a+calcWorkedHours(x.clock_in,x.clock_out,x.status),0),ded=rows.reduce((a,x)=>a+autoAttendanceDeduction(x),0);const emp=document.getElementById("attFilterEmployee")?.value||"",m=isoMonth(document.getElementById("attFilterMonth")?.value||"");const e=employees.find(x=>String(x.id)===String(emp));document.getElementById("attFilterSummary").textContent=`${m?displayMonth(m):"全部月份"}｜${e?.name||"全部員工"}｜${rows.length} 筆｜件數 ${qty}｜工時 ${Math.round(hrs*100)/100}｜扣款 ${money(ded)}`}
+function isSpecialAttendanceEmployeeName(name){
+  const n=String(name||"").replace(/\s+/g,"");
+  return ["王燦巧","王璨巧","王琛巧","李佳樺"].includes(n);
+}
+function renderAttendanceList(){
+  const rows=filteredAttendanceRows();
+  const empId=document.getElementById("attFilterEmployee")?.value||"";
+  const selectedEmp=employees.find(x=>String(x.id)===String(empId));
+  const special=!!selectedEmp && isSpecialAttendanceEmployeeName(selectedEmp.name);
+
+  const head=document.getElementById("attListHead");
+  if(head){
+    head.innerHTML=special
+      ? "<th>日期</th><th>員工</th><th>上班</th><th>下班</th><th>工作時數</th><th>扣款</th><th>件數</th><th>時薪</th><th>修改</th><th>刪除</th>"
+      : "<th>日期</th><th>員工</th><th>件數</th><th>上班</th><th>下班</th><th>工作時數</th><th>扣款</th><th>時薪</th><th>修改</th><th>刪除</th>";
+  }
+
+  document.getElementById("attList").innerHTML=rows.map(x=>{
+    const h=calcWorkedHours(x.clock_in,x.clock_out,x.status);
+    const d=autoAttendanceDeduction(x);
+    const qty=Number(x.piecework_qty||0);
+    const rowSpecial=special && isSpecialAttendanceEmployeeName(x.employees?.name||"");
+    if(rowSpecial){
+      return `<tr><td>${esc(displayMD(x.work_date))}</td><td>${esc(x.employees?.name||"")}</td><td>${esc(x.clock_in||"")}</td><td>${esc(x.clock_out||"")}</td><td>${h}</td><td>${money(d)}</td><td>${qty}</td><td>${money(x.hourly_rate)}</td><td><button class="secondary" onclick="editAttendance('${x.id}')">修改</button></td><td><button class="danger" onclick="deleteRow('attendance_records','${x.id}',loadAttendance)">刪除</button></td></tr>`;
+    }
+    return `<tr><td>${esc(displayMD(x.work_date))}</td><td>${esc(x.employees?.name||"")}</td><td>${qty}</td><td>${esc(x.clock_in||"")}</td><td>${esc(x.clock_out||"")}</td><td>${h}</td><td>${money(d)}</td><td>${money(x.hourly_rate)}</td><td><button class="secondary" onclick="editAttendance('${x.id}')">修改</button></td><td><button class="danger" onclick="deleteRow('attendance_records','${x.id}',loadAttendance)">刪除</button></td></tr>`;
+  }).join("")||`<tr><td colspan="10" class="empty">目前沒有符合條件的打卡/件數資料</td></tr>`;
+
+  const qty=rows.reduce((a,x)=>a+Number(x.piecework_qty||0),0);
+  const hrs=rows.reduce((a,x)=>a+calcWorkedHours(x.clock_in,x.clock_out,x.status),0);
+  const ded=rows.reduce((a,x)=>a+autoAttendanceDeduction(x),0);
+  const m=isoMonth(document.getElementById("attFilterMonth")?.value||"");
+  document.getElementById("attFilterSummary").textContent=`${m?displayMonth(m):"全部月份"}｜${selectedEmp?.name||"全部員工"}｜${rows.length} 筆｜件數 ${qty}｜工時 ${Math.round(hrs*100)/100}｜扣款 ${money(ded)}`;
+}
 function clearAttendanceFilter(){document.getElementById("attFilterEmployee").value="";document.getElementById("attFilterMonth").value="";renderAttendanceList()}
-function attendanceExportRows(){return filteredAttendanceRows().map(x=>{const qty=Number(x.piecework_qty||0),rate=Number(x.piecework_rate||0);return {"日期":displayDate(x.work_date),"員工":x.employees?.name||"","上班":String(x.clock_in||"").slice(0,5),"下班":String(x.clock_out||"").slice(0,5),"工作時數":calcWorkedHours(x.clock_in,x.clock_out,x.status),"扣款":autoAttendanceDeduction(x),"件數":qty,"單件":rate,"金額":qty*rate,"時薪":Number(x.hourly_rate||0),"狀態":x.status||"","備註":x.note||""}})}
-function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.length)return alert("沒有可匯出的打卡/件數紀錄");const emp=document.getElementById("attFilterEmployee").value,e=employees.find(x=>String(x.id)===String(emp)),m=isoMonth(document.getElementById("attFilterMonth").value)||"全部月份";const ws=XLSX.utils.json_to_sheet(rows);ws["!cols"]=[{wch:12},{wch:12},{wch:8},{wch:8},{wch:10},{wch:10},{wch:8},{wch:10},{wch:10},{wch:10},{wch:10},{wch:24}];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"打卡件數紀錄");XLSX.writeFile(wb,`七旗_${e?.name||"全部員工"}_${m.replace("-","")}_打卡件數紀錄.xlsx`)}
-function exportAttendancePDF(){const rows=attendanceExportRows();if(!rows.length)return alert("沒有可匯出的打卡/件數紀錄");const emp=document.getElementById("attFilterEmployee").value,e=employees.find(x=>String(x.id)===String(emp)),m=isoMonth(document.getElementById("attFilterMonth").value);const title=`七旗公司｜打卡/件數個人紀錄表`;const subtitle=`月份：${m?displayMonth(m):"全部月份"}　員工：${e?.name||"全部員工"}`;const qty=rows.reduce((a,x)=>a+Number(x["件數"]||0),0),hrs=rows.reduce((a,x)=>a+Number(x["工作時數"]||0),0),ded=rows.reduce((a,x)=>a+Number(x["扣款"]||0),0);const body=rows.map(x=>`<tr><td>${x["日期"]}</td><td>${x["員工"]}</td><td>${x["上班"]}</td><td>${x["下班"]}</td><td>${x["工作時數"]}</td><td>${x["扣款"]}</td><td>${x["件數"]}</td><td>${x["單件"]}</td><td>${x["金額"]}</td><td>${x["時薪"]}</td><td>${x["狀態"]}</td><td>${esc(x["備註"])}</td></tr>`).join("");const w=window.open("","_blank");if(!w)return alert("瀏覽器阻擋了 PDF 視窗，請允許彈出視窗後再試一次");w.document.write(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",Arial,sans-serif;padding:24px;color:#111}h1{font-size:22px;margin:0 0 8px}.sub{margin-bottom:14px}.sum{margin:12px 0;font-weight:700}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #bbb;padding:6px;text-align:left;white-space:nowrap}th{background:#f3f4f6}@media print{body{padding:0}@page{size:A4 landscape;margin:10mm}}</style></head><body><h1>${title}</h1><div class="sub">${subtitle}</div><div class="sum">共 ${rows.length} 筆｜件數 ${qty}｜工時 ${hrs}｜扣款 ${ded}</div><table><thead><tr><th>日期</th><th>員工</th><th>上班</th><th>下班</th><th>工作時數</th><th>扣款</th><th>件數</th><th>單件</th><th>金額</th><th>時薪</th><th>狀態</th><th>備註</th></tr></thead><tbody>${body}</tbody></table><script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script></body></html>`);w.document.close()}
-function resetAttendanceForm(){editingAttendanceId=null;document.getElementById("attTitle").textContent="新增打卡/件數";document.getElementById("aEmployee").disabled=false;document.getElementById("aEmployee").value="";document.getElementById("aDate").value=today();document.getElementById("aIn").value="";document.getElementById("aOut").value="";document.getElementById("aStatus").value="出勤";document.getElementById("aQty").value=0;document.getElementById("aPieceRate").value=0;document.getElementById("aHourlyRate").value=0;document.getElementById("aNote").value=""}
-function editAttendance(id){const x=attendanceRecords.find(v=>String(v.id)===String(id));if(!x)return;editingAttendanceId=x.id;document.getElementById("attTitle").textContent="修改打卡/件數";document.getElementById("aEmployee").value=x.employee_id||"";document.getElementById("aEmployee").disabled=true;document.getElementById("aDate").value=displayDate(x.work_date)||today();document.getElementById("aIn").value=(x.clock_in||"").slice(0,5);document.getElementById("aOut").value=(x.clock_out||"").slice(0,5);document.getElementById("aStatus").value=x.status||"出勤";document.getElementById("aQty").value=Number(x.piecework_qty||0);document.getElementById("aPieceRate").value=Number(x.piecework_rate||0);document.getElementById("aHourlyRate").value=Number(x.hourly_rate||0);document.getElementById("aNote").value=x.note||"";document.getElementById("attendance").scrollIntoView({behavior:"smooth",block:"start"})}
-async function saveAttendance(){const employee_id=document.getElementById("aEmployee").value;if(!employee_id)return alert("請選擇員工");const work_date=isoDate(document.getElementById("aDate").value);if(!work_date)return alert("日期請輸入 YYYY/MM/DD，例如 2026/09/01");const clock_in=document.getElementById("aIn").value||null,clock_out=document.getElementById("aOut").value||null,status=document.getElementById("aStatus").value;const work_hours=calcWorkedHours(clock_in,clock_out,status);const e=employees.find(v=>String(v.id)===String(employee_id));const autoDed=e?.pay_type==="monthly"?Math.max(0,8-work_hours)*monthlyHourRate(employee_id):0;const p={employee_id,work_date,clock_in,clock_out,status,deduction:autoDed,piecework_qty:Number(document.getElementById("aQty").value||0),piecework_rate:Number(document.getElementById("aPieceRate").value||0),work_hours,hourly_rate:Number(document.getElementById("aHourlyRate").value||0),note:document.getElementById("aNote").value.trim()||null};const r=editingAttendanceId?await sb.from("attendance_records").update(p).eq("id",editingAttendanceId):await sb.from("attendance_records").insert(p);if(r.error)return alert("打卡/件數儲存失敗："+r.error.message);resetAttendanceForm();await loadAttendance()}
+function attendanceExportRows(){
+  const empId=document.getElementById("attFilterEmployee")?.value||"";
+  const selectedEmp=employees.find(x=>String(x.id)===String(empId));
+  const special=!!selectedEmp && isSpecialAttendanceEmployeeName(selectedEmp.name);
+  return filteredAttendanceRows().map(x=>{
+    const base={
+      "日期":displayMD(x.work_date),
+      "員工":x.employees?.name||"",
+      "件數":Number(x.piecework_qty||0),
+      "上班":String(x.clock_in||"").slice(0,5),
+      "下班":String(x.clock_out||"").slice(0,5),
+      "工作時數":calcWorkedHours(x.clock_in,x.clock_out,x.status),
+      "扣款":autoAttendanceDeduction(x),
+      "時薪":Number(x.hourly_rate||0)
+    };
+    return special
+      ? {"日期":base["日期"],"員工":base["員工"],"上班":base["上班"],"下班":base["下班"],"工作時數":base["工作時數"],"扣款":base["扣款"],"件數":base["件數"],"時薪":base["時薪"]}
+      : base;
+  });
+}
+function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.length)return alert("沒有可匯出的打卡/件數紀錄");const emp=document.getElementById("attFilterEmployee").value,e=employees.find(x=>String(x.id)===String(emp)),m=isoMonth(document.getElementById("attFilterMonth").value)||"全部月份";const ws=XLSX.utils.json_to_sheet(rows);ws["!cols"]=[{wch:12},{wch:12},{wch:10},{wch:8},{wch:8},{wch:10},{wch:10},{wch:10}];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"打卡件數紀錄");XLSX.writeFile(wb,`七旗_${e?.name||"全部員工"}_${m.replace("-","")}_打卡件數紀錄.xlsx`)}
+function exportAttendancePDF(){
+  const rows=attendanceExportRows();
+  if(!rows.length)return alert("沒有可匯出的打卡/件數紀錄");
+  const emp=document.getElementById("attFilterEmployee").value;
+  const e=employees.find(x=>String(x.id)===String(emp));
+  const m=isoMonth(document.getElementById("attFilterMonth").value);
+  const special=!!e && isSpecialAttendanceEmployeeName(e.name);
+  const title=`七旗公司｜打卡/件數個人紀錄表`;
+  const subtitle=`月份：${m?displayMonth(m):"全部月份"}　員工：${e?.name||"全部員工"}`;
+  const qty=rows.reduce((a,x)=>a+Number(x["件數"]||0),0);
+  const hrs=rows.reduce((a,x)=>a+Number(x["工作時數"]||0),0);
+  const ded=rows.reduce((a,x)=>a+Number(x["扣款"]||0),0);
+  const headers=special
+    ? ["日期","員工","上班","下班","工作時數","扣款","件數","時薪"]
+    : ["日期","員工","件數","上班","下班","工作時數","扣款","時薪"];
+  const body=rows.map(x=>`<tr>${headers.map(h=>`<td>${esc(x[h]??"")}</td>`).join("")}</tr>`).join("");
+  const w=window.open("","_blank");
+  if(!w)return alert("瀏覽器阻擋了 PDF 視窗，請允許彈出視窗後再試一次");
+  w.document.write(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",Arial,sans-serif;padding:24px;color:#111}h1{font-size:22px;margin:0 0 8px}.sub{margin-bottom:14px}.sum{margin:12px 0;font-weight:700}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #bbb;padding:6px;text-align:left;white-space:nowrap}th{background:#f3f4f6}@media print{body{padding:0}@page{size:A4 landscape;margin:10mm}}</style></head><body><h1>${title}</h1><div class="sub">${subtitle}</div><div class="sum">共 ${rows.length} 筆｜件數 ${qty}｜工時 ${hrs}｜扣款 ${ded}</div><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table><script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script></body></html>`);
+  w.document.close();
+}
+function resetAttendanceForm(){editingAttendanceId=null;document.getElementById("attTitle").textContent="新增打卡/件數";document.getElementById("aEmployee").disabled=false;document.getElementById("aEmployee").value="";document.getElementById("aDate").value=today();document.getElementById("aIn").value="";document.getElementById("aOut").value="";document.getElementById("aStatus").value="出勤";document.getElementById("aQty").value=0;document.getElementById("aHourlyRate").value=0;document.getElementById("aNote").value=""}
+function editAttendance(id){const x=attendanceRecords.find(v=>String(v.id)===String(id));if(!x)return;editingAttendanceId=x.id;document.getElementById("attTitle").textContent="修改打卡/件數";document.getElementById("aEmployee").value=x.employee_id||"";document.getElementById("aEmployee").disabled=true;document.getElementById("aDate").value=displayDate(x.work_date)||today();document.getElementById("aIn").value=(x.clock_in||"").slice(0,5);document.getElementById("aOut").value=(x.clock_out||"").slice(0,5);document.getElementById("aStatus").value=x.status||"出勤";document.getElementById("aQty").value=Number(x.piecework_qty||0);document.getElementById("aHourlyRate").value=Number(x.hourly_rate||0);document.getElementById("aNote").value=x.note||"";document.getElementById("attendance").scrollIntoView({behavior:"smooth",block:"start"})}
+async function saveAttendance(){const employee_id=document.getElementById("aEmployee").value;if(!employee_id)return alert("請選擇員工");const work_date=isoDate(document.getElementById("aDate").value);if(!work_date)return alert("日期請輸入 YYYY/MM/DD，例如 2026/09/01");const clock_in=document.getElementById("aIn").value||null,clock_out=document.getElementById("aOut").value||null,status=document.getElementById("aStatus").value;const work_hours=calcWorkedHours(clock_in,clock_out,status);const e=employees.find(v=>String(v.id)===String(employee_id));const autoDed=e?.pay_type==="monthly"?Math.max(0,8-work_hours)*monthlyHourRate(employee_id):0;const p={employee_id,work_date,clock_in,clock_out,status,deduction:autoDed,piecework_qty:Number(document.getElementById("aQty").value||0),piecework_rate:Number(e?.unit_price||0),work_hours,hourly_rate:Number(document.getElementById("aHourlyRate").value||0),note:document.getElementById("aNote").value.trim()||null};const r=editingAttendanceId?await sb.from("attendance_records").update(p).eq("id",editingAttendanceId):await sb.from("attendance_records").insert(p);if(r.error)return alert("打卡/件數儲存失敗："+r.error.message);resetAttendanceForm();await loadAttendance()}
 async function monthAttendance(employee_id,raw){const month=isoMonth(raw);if(!month)throw new Error("月份請輸入 YYYY/MM，例如 2026/09");const y=+month.slice(0,4),m=+month.slice(5,7),last=new Date(y,m,0).getDate();const r=await sb.from("attendance_records").select("*").eq("employee_id",employee_id).gte("work_date",month+"-01").lte("work_date",month+"-"+String(last).padStart(2,"0"));if(r.error)throw r.error;return {month,rows:r.data||[]}}
 async function updateAttendanceSummary(){const id=document.getElementById("pEmployee").value,raw=document.getElementById("pMonth").value;if(!id||!raw)return;try{const {rows}=await monthAttendance(id,raw);document.getElementById("attendanceSummary").textContent=`已連動 ${rows.length} 筆打卡／件數紀錄`;}catch(e){document.getElementById("attendanceSummary").textContent=e.message}}
 function previewData(d){currentPayrollPreview=d;const e=employees.find(x=>String(x.id)===String(d.employee_id))||{},b=employeeBank(d.employee_id);document.getElementById("recordPreview").className="";document.getElementById("recordPreview").innerHTML=`<div class="preview-row"><span>月份</span><strong>${displayMonth(d.pay_month)}</strong></div><div class="preview-row"><span>員工</span><strong>${esc(e.name||"")}</strong></div><div class="preview-row"><span>計薪方式</span><strong>${d.pay_type==="monthly"?"月薪制":"單計帳制"}</strong></div><div class="preview-row"><span>月薪／件數／工時</span><strong>${esc(d.summary||"")}</strong></div><div class="preview-row"><span>請假時數</span><strong>${Number(d.leave_hours||0)}</strong></div><div class="preview-row"><span>請假扣款（24天制）</span><strong>${money(d.leave_deduction||0)}</strong></div><div class="preview-row"><span>其他扣款</span><strong>${money(d.other_deduction||0)}</strong></div>`;document.getElementById("resultPreview").innerHTML=`<tr><td>${esc(e.name||"")}</td><td>${esc(b.bank_code||"")}</td><td>${esc(b.account_number||"")}</td><td><strong>${money(d.net_amount)}</strong></td></tr>`}
