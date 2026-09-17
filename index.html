@@ -1384,7 +1384,7 @@ function exportCashExcel(){
 
   let exportBalance=0;
   const aoa=[
-    ["日期","支出","收入","存款餘額","摘要","核對"],
+    ["日期","支出","收入","摘要","存款餘額","核對"],
     ...rows.map(x=>{
       exportBalance+=Number(x.deposit||0)-Number(x.expense||0);
       return [
@@ -1471,8 +1471,8 @@ async function loadCash(){
         <td>${esc(cashDisplayMD(x.transaction_date))}</td>
         <td>${cashMoney(x.expense)}</td>
         <td>${cashMoney(x.deposit)}</td>
-        <td>${cashMoney(x.balance)}</td>
         <td>${esc(x.summary||"")}</td>
+        <td>${cashMoney(x.balance)}</td>
         <td>
           <div class="cash-action-group">
             <button type="button"
