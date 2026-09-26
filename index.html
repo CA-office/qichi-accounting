@@ -771,6 +771,16 @@ window.addEventListener('DOMContentLoaded',()=>{const d=document.getElementById(
 }
 </style>
 
+<style id="ingredient-table-2cm-all-columns">
+/* 食材統計表：操作、日期、品名、金額各 2cm，電腦與手機一致 */
+#ingredientStatsCard .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+#ingredientStatsCard .ingredient-stats-table{width:8cm!important;min-width:8cm!important;max-width:8cm!important;table-layout:fixed!important;margin:0!important;}
+#ingredientStatsCard .ingredient-stats-table thead th,
+#ingredientStatsCard .ingredient-stats-table tbody td{box-sizing:border-box!important;width:2cm!important;min-width:2cm!important;max-width:2cm!important;padding:6px 3px!important;overflow-wrap:anywhere;word-break:break-word;}
+#ingredientStatsCard .ingredient-stats-table .ingredient-actions{flex-wrap:wrap;gap:3px;}
+#ingredientStatsCard .ingredient-stats-table .ingredient-actions button{max-width:100%;padding:4px 6px;}
+@media(max-width:700px){#ingredientStatsCard .ingredient-stats-table{width:8cm!important;min-width:8cm!important;max-width:8cm!important;}}
+</style>
 </head><body>
 <div id="login" class="login"><div class="login-card"><div class="brand">七旗公司</div><form id="loginForm"><div class="field"><label>Email</label><input id="email" type="email" autocomplete="username"></div><div class="field"><label>密碼</label><input id="password" type="password" autocomplete="current-password"></div><button class="primary" type="submit">登入</button></form><div id="loginMsg" class="notice hidden" style="margin-top:12px"></div></div></div>
 <div id="app" class="hidden"><header class="topbar"><div class="top-title">七旗公司｜內帳管理系統</div><div class="top-user"><span id="userEmail"></span><button class="secondary" onclick="logout()">登出</button></div></header><div class="layout"><aside class="sidebar"><nav class="nav">
