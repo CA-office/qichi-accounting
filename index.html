@@ -32,7 +32,17 @@ function allIngredientRecords(){return [...savedIngredientRecords,...ingredientR
 function ingredientStatus(message,failed=false){const el=document.getElementById('ingredientSyncStatus');if(el){el.textContent=message;el.style.color=failed?'#b91c1c':'#476052'}}
 function formatIngredientDate(){const el=document.getElementById('ingredientDate');if(!el)return;let s=String(el.value||'').replace(/\D/g,'');if(s.length===3)s='0'+s;if(s.length>=4){const mm=s.slice(0,2),dd=s.slice(2,4),m=+mm,d=+dd;if(m>=1&&m<=12&&d>=1&&d<=31)el.value=mm+'/'+dd}}
 function resetIngredientForm(){editingIngredientId=null;['ingredientDate','ingredientName','ingredientAmount'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});const b=document.getElementById('ingredientSaveBtn');if(b)b.textContent='儲存'}
-function renderIngredientStats(){const body=document.getElementById('ingredientStatsBody'),totalEl=document.getElementById('ingredientStatsTotal');if(!body||!totalEl)return;const rows=allIngredientRecords();const total=rows.reduce((sum,r)=>sum+(Number(r.amount)||0),0);body.innerHTML=rows.length?rows.map(r=>`<tr><td><div class="ingredient-actions"><button class="secondary" type="button" onclick="editIngredient('${esc(r.id)}')">修改</button><button class="danger" type="button" onclick="deleteIngredient('${esc(r.id)}')">刪除</button></div></td><td>${esc(r.date||'')}</td><td>${esc(r.name||'')}</td><td>${(Number(r.amount)||0).toLocaleString('zh-TW')}</td></tr>`).join(''):'<tr><td colspan="4" class="muted">目前沒有食材資料</td></tr>';totalEl.textContent=Number(total||0).toLocaleString('zh-TW')}
+function updateIngredientProductFilter(){
+ const sel=document.getElementById('ingredientProductFilter');if(!sel)return;
+ const previous=sel.value;
+ const names=[...new Set(allIngredientRecords().map(r=>String(r.name||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+ sel.replaceChildren(new Option('全部品名',''),...names.map(n=>new Option(n,n)));
+ if(names.includes(previous))sel.value=previous;
+ const chosen=sel.value;
+ const total=allIngredientRecords().filter(r=>!chosen||String(r.name||'').trim()===chosen).reduce((n,r)=>n+(Number(r.amount)||0),0);
+ const out=document.getElementById('ingredientProductTotal');if(out)out.textContent=(chosen?'「'+chosen+'」總金額：':'全部總金額：')+total.toLocaleString('zh-TW');
+}
+function renderIngredientStats(){const body=document.getElementById('ingredientStatsBody'),totalEl=document.getElementById('ingredientStatsTotal');if(!body||!totalEl)return;const rows=allIngredientRecords();const total=rows.reduce((sum,r)=>sum+(Number(r.amount)||0),0);body.innerHTML=rows.length?rows.map(r=>`<tr><td><div class="ingredient-actions"><button class="secondary" type="button" onclick="editIngredient('${esc(r.id)}')">修改</button><button class="danger" type="button" onclick="deleteIngredient('${esc(r.id)}')">刪除</button></div></td><td>${esc(r.date||'')}</td><td>${esc(r.name||'')}</td><td>${(Number(r.amount)||0).toLocaleString('zh-TW')}</td></tr>`).join(''):'<tr><td colspan="4" class="muted">目前沒有食材資料</td></tr>';totalEl.textContent=Number(total||0).toLocaleString('zh-TW');updateIngredientProductFilter()}
 async function loadIngredientRecords(){if(typeof sb==="undefined"){ingredientStatus("雲端元件尚未載入",true);return}const session=await sb.auth.getSession();if(!session.data.session){ingredientStatus('登入後載入雲端食材資料');return}const {data,error}=await sb.from(ING_TABLE).select('id,date,name,amount').order('date',{ascending:true}).order('created_at',{ascending:true});if(error){ingredientSyncReady=false;ingredientStatus('雲端載入失敗：'+error.message+'；請先執行附上的 SQL 設定',true);return}savedIngredientRecords=data||[];ingredientRecords=[];ingredientSyncReady=true;renderIngredientStats();ingredientStatus('已與雲端同步（手機與電腦共用）')}
 async function saveIngredient(){formatIngredientDate();const date=document.getElementById('ingredientDate').value.trim(),name=document.getElementById('ingredientName').value.trim(),raw=document.getElementById('ingredientAmount').value.replace(/,/g,'').trim(),amount=Number(raw);if(!/^\d{2}\/\d{2}$/.test(date))return alert('請輸入日期，例如 0903');if(!name)return alert('請輸入品名');if(!raw||!Number.isFinite(amount)||amount<0)return alert('請輸入正確金額');if(!ingredientSyncReady){await loadIngredientRecords();if(!ingredientSyncReady)return alert('雲端尚未連線，請先完成 SQL 設定，避免資料只存在單一裝置')}ingredientStatus('正在儲存…');const payload={date,name,amount};const result=editingIngredientId?await sb.from(ING_TABLE).update(payload).eq('id',editingIngredientId):await sb.from(ING_TABLE).insert(payload);if(result.error){ingredientStatus('儲存失敗：'+result.error.message,true);return alert('食材儲存失敗：'+result.error.message)}resetIngredientForm();await loadIngredientRecords()}
 function editIngredient(id){const x=savedIngredientRecords.find(v=>String(v.id)===String(id));if(!x)return;editingIngredientId=x.id;document.getElementById('ingredientDate').value=x.date||'';document.getElementById('ingredientName').value=x.name||'';document.getElementById('ingredientAmount').value=x.amount??'';document.getElementById('ingredientSaveBtn').textContent='儲存修改';document.getElementById('ingredientDate').focus()}
@@ -45,7 +55,8 @@ function exportIngredientExcel(){
     return;
   }
 
-  const rows=allIngredientRecords();
+  const chosen=document.getElementById('ingredientProductFilter')?.value||'';
+  const rows=allIngredientRecords().filter(r=>!chosen||String(r.name||'').trim()===chosen);
   if(!rows.length){
     alert("目前沒有食材資料可下載");
     return;
@@ -54,7 +65,7 @@ function exportIngredientExcel(){
   const total=rows.reduce((sum,r)=>sum+(Number(r.amount)||0),0);
 
   const aoa=[
-    ["食材統計表","","",""],
+    [chosen?"食材統計表－"+chosen:"食材統計表","","",""],
     ["操作","日期","品名","金額"],
     ...rows.map(r=>["",r.date||"",r.name||"",Number(r.amount)||0]),
     ["","","總金額",total]
@@ -113,7 +124,7 @@ function exportIngredientExcel(){
 
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,"食材統計表");
-  XLSX.writeFile(wb,"食材統計表.xlsx");
+  XLSX.writeFile(wb,chosen?"食材統計表_"+chosen.replace(/[\\/:*?"<>|]/g,"_")+".xlsx":"食材統計表.xlsx");
 }
 
 window.addEventListener('DOMContentLoaded',()=>{const d=document.getElementById('ingredientDate');d?.addEventListener('blur',formatIngredientDate);d?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key==='Tab')formatIngredientDate()});document.getElementById('ingredientAmount')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();saveIngredient()}});sb.auth.onAuthStateChange((event,session)=>{if(session)setTimeout(loadIngredientRecords,0)});loadIngredientRecords();document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadIngredientRecords()})});
@@ -774,12 +785,20 @@ window.addEventListener('DOMContentLoaded',()=>{const d=document.getElementById(
 <style id="ingredient-table-2cm-all-columns">
 /* 食材統計表：操作、日期、品名、金額各 2cm，電腦與手機一致 */
 #ingredientStatsCard .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-#ingredientStatsCard .ingredient-stats-table{width:8cm!important;min-width:8cm!important;max-width:8cm!important;table-layout:fixed!important;margin:0!important;}
+#ingredientStatsCard .ingredient-stats-table{width:10cm!important;min-width:10cm!important;max-width:10cm!important;table-layout:fixed!important;margin:0!important;}
 #ingredientStatsCard .ingredient-stats-table thead th,
 #ingredientStatsCard .ingredient-stats-table tbody td{box-sizing:border-box!important;width:2cm!important;min-width:2cm!important;max-width:2cm!important;padding:6px 3px!important;overflow-wrap:anywhere;word-break:break-word;}
+#ingredientStatsCard .ingredient-stats-table thead th:first-child,
+#ingredientStatsCard .ingredient-stats-table tbody td:first-child{width:4cm!important;min-width:4cm!important;max-width:4cm!important;}
 #ingredientStatsCard .ingredient-stats-table .ingredient-actions{flex-wrap:wrap;gap:3px;}
 #ingredientStatsCard .ingredient-stats-table .ingredient-actions button{max-width:100%;padding:4px 6px;}
-@media(max-width:700px){#ingredientStatsCard .ingredient-stats-table{width:8cm!important;min-width:8cm!important;max-width:8cm!important;}}
+@media(max-width:700px){#ingredientStatsCard .ingredient-stats-table{width:10cm!important;min-width:10cm!important;max-width:10cm!important;}}
+</style>
+<style id="ingredient-product-filter-style">
+#ingredientStatsCard .ingredient-product-select{display:inline-flex;align-items:center;gap:6px;font-size:14px;white-space:nowrap}
+#ingredientStatsCard .ingredient-product-select select{min-width:145px;max-width:230px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;padding:9px;font-size:14px}
+#ingredientStatsCard #ingredientProductTotal{align-self:center;font-size:14px;white-space:nowrap}
+@media(max-width:700px){#ingredientStatsCard .ingredient-toolbar{align-items:center}#ingredientStatsCard #ingredientProductTotal{width:100%}}
 </style>
 </head><body>
 <div id="login" class="login"><div class="login-card"><div class="brand">七旗公司</div><form id="loginForm"><div class="field"><label>Email</label><input id="email" type="email" autocomplete="username"></div><div class="field"><label>密碼</label><input id="password" type="password" autocomplete="current-password"></div><button class="primary" type="submit">登入</button></form><div id="loginMsg" class="notice hidden" style="margin-top:12px"></div></div></div>
@@ -862,8 +881,12 @@ window.addEventListener('DOMContentLoaded',()=>{const d=document.getElementById(
 <div class="ingredient-toolbar">
   <button type="button" class="primary" onclick="finalizeIngredientRecords()">儲存並同步</button>
   <button type="button" class="secondary" onclick="exportIngredientExcel()">下載 Excel</button>
+  <label class="ingredient-product-select">品名
+    <select id="ingredientProductFilter" aria-label="選擇單一品名" onchange="updateIngredientProductFilter()"><option value="">全部品名</option></select>
+  </label>
+  <strong id="ingredientProductTotal" aria-live="polite">全部總金額：0</strong>
 </div>
-<div class="table-wrap"><table class="ingredient-stats-table"><thead><tr><th>操作</th><th>日期 MM/DD</th><th>品名</th><th>金額</th></tr></thead><tbody id="ingredientStatsBody"><tr><td colspan="4" class="muted">目前沒有食材資料</td></tr></tbody><tfoot><tr><th colspan="3" style="text-align:right">總金額</th><th id="ingredientStatsTotal">0</th></tr></tfoot></table></div></div>
+<div class="table-wrap"><table class="ingredient-stats-table"><thead><tr><th>操作</th><th>日期</th><th>品名</th><th>金額</th></tr></thead><tbody id="ingredientStatsBody"><tr><td colspan="4" class="muted">目前沒有食材資料</td></tr></tbody><tfoot><tr><th colspan="3" style="text-align:right">總金額</th><th id="ingredientStatsTotal">0</th></tr></tfoot></table></div></div>
 
 
   <div class="page-head">
