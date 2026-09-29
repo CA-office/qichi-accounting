@@ -1033,13 +1033,21 @@ async function saveEmployee(){const name=document.getElementById("eName").value.
 async function deleteEmployee(id){if(!confirm("確定要刪除這位員工嗎？相關銀行資料也會一起刪除。"))return;const br=await sb.from("bank_accounts").delete().eq("employee_id",id);if(br.error)return alert("銀行資料刪除失敗："+br.error.message);const r=await sb.from("employees").delete().eq("id",id);if(r.error)return alert("員工刪除失敗："+r.error.message);await loadBanks();await loadEmployees();updateHome()}
 async function loadAttendance(){const r=await sb.from("attendance_records").select("*,employees(name)").order("work_date",{ascending:true});if(r.error){console.warn(r.error);return}attendanceRecords=r.data||[];renderAttendanceList()}
 function filteredAttendanceRows(){let rows=attendanceRecords.slice();const emp=document.getElementById("attFilterEmployee")?.value||"",m=isoMonth(document.getElementById("attFilterMonth")?.value||"");if(emp)rows=rows.filter(x=>String(x.employee_id)===String(emp));if(m)rows=rows.filter(x=>String(x.work_date||"").slice(0,7)===m);rows.sort((a,b)=>String(a.work_date||"").localeCompare(String(b.work_date||"")));return rows}
-function calcWorkedHours(clockIn,clockOut,status="出勤"){
-  if(status==="請假"||status==="缺勤")return 0;
-  const a=String(clockIn||"").slice(0,5),b=String(clockOut||"").slice(0,5);
-  if(!/^\d{2}:\d{2}$/.test(a)||!/^\d{2}:\d{2}$/.test(b))return 0;
-  const [ah,am]=a.split(":").map(Number),[bh,bm]=b.split(":").map(Number);
-  let mins=(bh*60+bm)-(ah*60+am); if(mins<0)mins+=24*60;
-  mins=Math.max(0,mins-60); // 固定扣 1 小時休息
+function calcWorkedHours(clockIn,clockOut,status){
+  if(!clockIn||!clockOut||status==="請假") return 0;
+  const toMin=t=>{
+    const p=String(t).slice(0,5).split(":").map(Number);
+    return (p[0]||0)*60+(p[1]||0);
+  };
+  const s=toMin(clockIn), e=toMin(clockOut);
+  if(e<=s)return 0;
+  let mins=e-s;
+  // 只有實際跨過午休 12:00～13:00 才扣除重疊的休息時間。
+  // 例如 09:00～12:00 = 3小時；13:00～15:30 = 2.5小時；
+  // 08:30～15:30 = 6小時；08:30～17:30 = 8小時。
+  const lunchStart=12*60, lunchEnd=13*60;
+  const overlap=Math.max(0,Math.min(e,lunchEnd)-Math.max(s,lunchStart));
+  mins-=overlap;
   return Math.round((mins/60)*100)/100;
 }
 function monthlyHourRate(employeeId){const e=employees.find(v=>String(v.id)===String(employeeId));const base=Number(e?.base_salary||0);return Math.floor((base/24)/8)||0}
@@ -1167,7 +1175,7 @@ async function previewAllEmployees(){
           const h=calcWorkedHours(x.clock_in,x.clock_out,x.status);
           qty+=q; hrs+=h;
           pieceAmount+=q*((+x.piecework_rate||0)||(+e.unit_price||0));
-          hourAmount+=h*((+x.hourly_rate||0)||(+e.hourly_rate||0));
+          hourAmount+=h*((+x.hourly_rate||0)||(+e.hourly_rate||0)); // 時薪制：工作時數 × 時薪，無需月薪
           ded+=+x.deduction||0;
         });
         const allowance=+e.allowance||0;
