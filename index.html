@@ -1162,7 +1162,7 @@ function attendanceExportRows(){
       : base;
   });
 }
-function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.length)return alert("沒有可匯出的打卡/件數紀錄");const emp=document.getElementById("attFilterEmployee").value,e=employees.find(x=>String(x.id)===String(emp)),m=isoMonth(document.getElementById("attFilterMonth").value)||"全部月份";const ws=XLSX.utils.json_to_sheet(rows);ws["!cols"]=Array.from({length:8},()=>({wch:38})); /* 約 10cm 欄寬 */const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"打卡件數紀錄");
+function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.length)return alert("沒有可匯出的打卡/件數紀錄");const emp=document.getElementById("attFilterEmployee").value,e=employees.find(x=>String(x.id)===String(emp)),m=isoMonth(document.getElementById("attFilterMonth").value)||"全部月份";const ws=XLSX.utils.json_to_sheet(rows);ws["!cols"]=Array.from({length:8},()=>({wch:10})); /* Excel 欄寬數值 10 */const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"打卡件數紀錄");
   // 七旗打卡 Excel：最下方補「工作時數、扣薪」總計
   const exportRange=XLSX.utils.decode_range(ws["!ref"]);
   const firstDataRow=1; // 0-based：第 1 列是標題
@@ -1178,6 +1178,7 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
     totalDeduction+=d;
 
     // 只要有扣薪，扣薪金額顯示紅色
+    if(dedCell){dedCell.z='#,##0';}
     if(d>0 && dedCell){
       dedCell.s=dedCell.s||{};
       dedCell.s.font={...(dedCell.s.font||{}),color:{rgb:"FF0000"}};
