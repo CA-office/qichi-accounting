@@ -1159,7 +1159,7 @@ function attendanceExportRows(){
       "時薪":Number(x.hourly_rate||0)
     };
     return special
-      ? {"員工":base["員工"],"日期":base["日期"],"上班":x.status==="休假"?"休假":base["上班"],"下班":x.status==="休假"?"":base["下班"],"工作時數":base["工作時數"],"扣款":base["扣款"],"件數":base["件數"],"時薪":base["時薪"]}
+      ? {"員工":base["員工"],"日期":base["日期"],"上班":(x.status==="休假"||x.status==="請假")?x.status:base["上班"],"下班":(x.status==="休假"||x.status==="請假")?"":base["下班"],"工作時數":base["工作時數"],"扣款":base["扣款"],"件數":base["件數"],"時薪":base["時薪"]}
       : base;
   });
 }
@@ -1181,9 +1181,14 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
     // 休假：上班欄顯示紅色「休假」
   for(let r=1;r<=exportRange.e.r;r++){
     const statusCell=ws[XLSX.utils.encode_cell({r:r,c:2})];
-    if(statusCell && String(statusCell.v).trim()==="休假"){
+    if(statusCell && (String(statusCell.v).trim()==="休假" || String(statusCell.v).trim()==="請假")){
       statusCell.s=statusCell.s||{};
       statusCell.s.font={...(statusCell.s.font||{}),color:{rgb:"FF0000"}};
+      const dateCell=ws[XLSX.utils.encode_cell({r:r,c:1})];
+      if(dateCell){
+        dateCell.s=dateCell.s||{};
+        dateCell.s.font={...(dateCell.s.font||{}),color:{rgb:"FF0000"}};
+      }
     }
   }
 
@@ -1202,25 +1207,28 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
   if(selectedEmployeeName==="王瓈巧"){
     // 同一天有多筆打卡（例如 9/10 上午、下午）仍只算 1 個上班天。
     const filteredRaw=filteredAttendanceRows();
-    const workedDateSet=new Set();
-    filteredRaw.forEach(x=>{
-      // 上班天數以「有紀錄的日期」計算：
-      // 同一天多筆只算 1 天；整日請假（例如 9/19）仍屬當月應上班日，也算 1 天。
-      const day=String(x.work_date||"").slice(0,10);
-      if(day) workedDateSet.add(day);
-    });
-    const workDays=workedDateSet.size;
+    const filteredRaw=filteredAttendanceRows();
+    const workDateSet=new Set();
+    const restDateSet=new Set();
+    const leaveDateSet=new Set();
 
-    // 休假天數＝當月總天數－上班日期數（沒打卡與請假都算休假）。
-    const monthValue=String(document.getElementById("attFilterMonth")?.value||"").trim().replace("-","/");
-    const parts=monthValue.split("/");
-    const yy=Number(parts[0]), mm=Number(parts[1]);
-    const daysInMonth=(yy&&mm)?new Date(yy,mm,0).getDate():0;
-    const leaveDays=Math.max(0,daysInMonth-workDays);
+    filteredRaw.forEach(x=>{
+      const day=String(x.work_date||"").slice(0,10);
+      if(!day) return;
+      const st=String(x.status||"").trim();
+      if(st==="休假") restDateSet.add(day);
+      else if(st==="請假") leaveDateSet.add(day);
+      else workDateSet.add(day);
+    });
+
+    // 同一天多筆只算一天；「請假」屬應上班日，所以計入上班天數。
+    const workDays=new Set([...workDateSet,...leaveDateSet]).size;
+    const leaveDays=restDateSet.size;
+    const paidLeaveDays=leaveDateSet.size;
 
     // 最下面一列集中呈現：總計｜上班24天／休假6天｜...｜182.5｜4,961
     XLSX.utils.sheet_add_aoa(ws,[
-      ["總計",`上班 ${workDays} 天／休假 ${leaveDays} 天`,"","",totalHours,totalDeduction]
+      ["總計",`休假 ${leaveDays} 天`,"","",totalHours,`${paidLeaveDays}天/${money(totalDeduction)}`]
     ],{origin:totalRow});
   }else{
     XLSX.utils.sheet_add_aoa(ws,[["","","","總計",totalHours,totalDeduction]],{origin:totalRow});
@@ -1236,7 +1244,6 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
   });
   if(ws["E"+(totalRow+1)]) ws["E"+(totalRow+1)].z='0.0';
   if(ws["F"+(totalRow+1)]){
-    ws["F"+(totalRow+1)].z='#,##0';
     ws["F"+(totalRow+1)].s.font={...(ws["F"+(totalRow+1)].s.font||{}),bold:true,color:{rgb:"FF0000"}};
   }
 
