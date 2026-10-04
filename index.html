@@ -1158,7 +1158,7 @@ function attendanceExportRows(){
       "時薪":Number(x.hourly_rate||0)
     };
     return special
-      ? {"日期":base["日期"],"員工":base["員工"],"上班":base["上班"],"下班":base["下班"],"工作時數":base["工作時數"],"扣款":base["扣款"],"件數":base["件數"],"時薪":base["時薪"]}
+      ? {"員工":base["員工"],"日期":base["日期"],"上班":base["上班"],"下班":base["下班"],"工作時數":base["工作時數"],"扣款":base["扣款"],"件數":base["件數"],"時薪":base["時薪"]}
       : base;
   });
 }
@@ -1186,8 +1186,35 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
   }
 
   const totalRow=lastDataRow+1;
-  XLSX.utils.sheet_add_aoa(ws,[["","","","總計",totalHours,totalDeduction]],{origin:totalRow});
-  ["D","E","F"].forEach(col=>{
+  const selectedEmployeeName=String(document.getElementById("attFilterEmployee")?.selectedOptions?.[0]?.textContent||"").trim();
+  let finalEndRow=totalRow;
+
+  if(selectedEmployeeName==="王瓈巧"){
+    // 同一天有多筆打卡（例如 9/10 上午、下午）仍只算 1 個上班天。
+    const filteredRaw=filteredAttendanceRows();
+    const workedDateSet=new Set();
+    filteredRaw.forEach(x=>{
+      const h=calcWorkedHours(x.clock_in,x.clock_out,x.status);
+      if(h>0) workedDateSet.add(String(x.work_date||"").slice(0,10));
+    });
+    const workDays=workedDateSet.size;
+
+    // 休假天數＝當月總天數－上班日期數（沒打卡與請假都算休假）。
+    const monthValue=String(document.getElementById("attFilterMonth")?.value||"").trim().replace("-","/");
+    const parts=monthValue.split("/");
+    const yy=Number(parts[0]), mm=Number(parts[1]);
+    const daysInMonth=(yy&&mm)?new Date(yy,mm,0).getDate():0;
+    const leaveDays=Math.max(0,daysInMonth-workDays);
+
+    // 最下面一列集中呈現：總計｜上班24天／休假6天｜...｜182.5｜4,961
+    XLSX.utils.sheet_add_aoa(ws,[
+      ["總計",`上班 ${workDays} 天／休假 ${leaveDays} 天`,"","",totalHours,totalDeduction]
+    ],{origin:totalRow});
+  }else{
+    XLSX.utils.sheet_add_aoa(ws,[["","","","總計",totalHours,totalDeduction]],{origin:totalRow});
+  }
+
+  ["A","B","D","E","F"].forEach(col=>{
     const cell=ws[col+(totalRow+1)];
     if(cell){
       cell.s=cell.s||{};
@@ -1203,7 +1230,7 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
 
   // 更新工作表範圍，讓新增的總計列確實出現在下載檔
   const newRange=XLSX.utils.decode_range(ws["!ref"]);
-  newRange.e.r=totalRow;
+  newRange.e.r=finalEndRow;
   ws["!ref"]=XLSX.utils.encode_range(newRange);
 
   XLSX.writeFile(wb,`七旗_${e?.name||"全部員工"}_${m.replace("-","")}_打卡件數紀錄.xlsx`)}
