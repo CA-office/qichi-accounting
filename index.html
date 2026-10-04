@@ -1058,20 +1058,24 @@ function calcWangCanQiaoMonthly(e,rows){
   const hourly=Math.floor(dayRate/8); // 36,000 => 187，不取 .5
 
   let actualHours=0;
-  let workedDays=0;
-  let fullLeaveDays=0;
+  const scheduledDateSet=new Set();
+  const fullLeaveDateSet=new Set();
 
   rows.forEach(x=>{
     const h=calcWorkedHours(x.clock_in,x.clock_out,x.status);
     actualHours+=h;
 
-    if(h>0){
-      workedDays+=1;
-    }else if(x.status==="請假" || x.status==="缺勤"){
-      fullLeaveDays+=1;
-    }
+    const day=String(x.work_date||"").slice(0,10);
+    const st=String(x.status||"").trim();
+
+    // 應上班天數：出勤＋請假都算；只有「休假」不算。
+    // 同一天即使有上午/下午兩筆紀錄，也只算 1 天。
+    if(day && st!=="休假") scheduledDateSet.add(day);
+    if(day && st==="請假") fullLeaveDateSet.add(day);
   });
 
+  const workedDays=scheduledDateSet.size;
+  const fullLeaveDays=fullLeaveDateSet.size;
   actualHours=Math.round(actualHours*100)/100;
   const standardHours=workedDays*8;
   const hourDiff=Math.round((actualHours-standardHours)*100)/100;
@@ -1172,15 +1176,27 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
   const exportRange=XLSX.utils.decode_range(ws["!ref"]);
   const firstDataRow=1; // 0-based：第 1 列是標題
   const lastDataRow=exportRange.e.r;
-  let totalHours=0,totalDeduction=0;
+  // 總計直接依「目前篩選月份」的原始紀錄重新計算，
+  // 不沿用任何舊 Excel 數字，因此 9 月、10 月都會各算各的。
+  const currentMonthRawRows=filteredAttendanceRows();
+  let totalHours=currentMonthRawRows.reduce((sum,x)=>{
+    const st=String(x.status||"").trim();
+    if(st==="休假" || st==="請假") return sum;
+    return sum+(Number(calcWorkedHours(x.clock_in,x.clock_out,x.status))||0);
+  },0);
+  totalHours=Math.round(totalHours*100)/100;
+
+  let totalDeduction=currentMonthRawRows.reduce((sum,x)=>{
+    const st=String(x.status||"").trim();
+    if(st==="休假") return sum;
+    return sum+(Number(autoAttendanceDeduction(x))||0);
+  },0);
+  totalDeduction=Math.round(totalDeduction);
 
   for(let r=firstDataRow;r<=lastDataRow;r++){
     const hourCell=ws[XLSX.utils.encode_cell({r:r,c:4})];
     const dedCell=ws[XLSX.utils.encode_cell({r:r,c:5})];
-    const h=Number(hourCell?.v)||0;
     const d=Number(dedCell?.v)||0;
-    totalHours+=h;
-    totalDeduction+=d;
 
     // 休假：上班欄顯示紅色「休假」
   for(let r=1;r<=exportRange.e.r;r++){
@@ -1235,7 +1251,7 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
 
     // 最下面一列集中呈現：總計｜上班24天／休假6天｜...｜182.5｜4,961
     XLSX.utils.sheet_add_aoa(ws,[
-      ["總計",`休假 ${leaveDays} 天`,"","",totalHours,`${paidLeaveDays}天/${money(totalDeduction)}`]
+      ["總計",`休假 ${leaveDays} 天`,"","",totalHours,`${paidLeaveDays}天/${Number(totalDeduction||0).toLocaleString("en-US")}`]
     ],{origin:totalRow});
   }else{
     XLSX.utils.sheet_add_aoa(ws,[["","","","總計",totalHours,totalDeduction]],{origin:totalRow});
