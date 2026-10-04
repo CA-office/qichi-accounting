@@ -1181,6 +1181,20 @@ function attendanceExportRows(){
       "扣款":autoAttendanceDeduction(x),
       "時薪":Number(x.hourly_rate||0)
     };
+    const empName=String(x.employees?.name||"").replace(/\\s+/g,"");
+
+    // 李孟樺 Excel 專用格式：
+    // 不顯示件數欄；休假顯示在上班欄；請假顯示在工作時數欄。
+    if(empName==="李孟樺"){
+      if(x.status==="休假"){
+        return {"員工":base["員工"],"日期":base["日期"],"上班":"休假","下班":"","工作時數":0,"扣款":""};
+      }
+      if(x.status==="請假"){
+        return {"員工":base["員工"],"日期":base["日期"],"上班":"","下班":"","工作時數":"請假","扣款":base["扣款"]};
+      }
+      return {"員工":base["員工"],"日期":base["日期"],"上班":base["上班"],"下班":base["下班"],"工作時數":base["工作時數"],"扣款":base["扣款"]||""};
+    }
+
     return special
       ? (x.status==="休假"
           ? {"員工":base["員工"],"日期":base["日期"],"上班":"休假","下班":"","工作時數":0,"扣款":"","件數":base["件數"],"時薪":base["時薪"]}
@@ -1212,22 +1226,28 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
   },0);
   totalDeduction=Math.round(totalDeduction);
 
+  const exportHeaders=Object.keys(rows[0]||{});
+  const hourCol=exportHeaders.indexOf("工作時數");
+  const dedCol=exportHeaders.indexOf("扣款");
+  const inCol=exportHeaders.indexOf("上班");
+  const dateCol=exportHeaders.indexOf("日期");
+
   for(let r=firstDataRow;r<=lastDataRow;r++){
-    const hourCell=ws[XLSX.utils.encode_cell({r:r,c:4})];
-    const dedCell=ws[XLSX.utils.encode_cell({r:r,c:5})];
+    const hourCell=hourCol>=0?ws[XLSX.utils.encode_cell({r:r,c:hourCol})]:null;
+    const dedCell=dedCol>=0?ws[XLSX.utils.encode_cell({r:r,c:dedCol})]:null;
     const d=Number(dedCell?.v)||0;
 
-    // 休假：上班欄顯示紅色「休假」
+    // 休假、請假文字與日期顯示紅色；工作時數數字維持黑色。
   for(let r=1;r<=exportRange.e.r;r++){
-    const restCell=ws[XLSX.utils.encode_cell({r:r,c:2})];
-    const leaveCell=ws[XLSX.utils.encode_cell({r:r,c:4})];
+    const restCell=inCol>=0?ws[XLSX.utils.encode_cell({r:r,c:inCol})]:null;
+    const leaveCell=hourCol>=0?ws[XLSX.utils.encode_cell({r:r,c:hourCol})]:null;
     const isRest=restCell && String(restCell.v).trim()==="休假";
     const isLeave=leaveCell && String(leaveCell.v).trim()==="請假";
     if(isRest || isLeave){
       const statusCell=isRest?restCell:leaveCell;
       statusCell.s=statusCell.s||{};
       statusCell.s.font={...(statusCell.s.font||{}),color:{rgb:"FF0000"}};
-      const dateCell=ws[XLSX.utils.encode_cell({r:r,c:1})];
+      const dateCell=dateCol>=0?ws[XLSX.utils.encode_cell({r:r,c:dateCol})]:null;
       if(dateCell){
         dateCell.s=dateCell.s||{};
         dateCell.s.font={...(dateCell.s.font||{}),color:{rgb:"FF0000"}};
@@ -1272,9 +1292,12 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
     XLSX.utils.sheet_add_aoa(ws,[
       ["總計",`休假 ${leaveDays} 天`,"","",totalHours,`${paidLeaveDays}天/${Number(totalDeduction||0).toLocaleString("en-US")}`]
     ],{origin:totalRow});
+  }else if(selectedEmployeeName==="李孟樺"){
+    XLSX.utils.sheet_add_aoa(ws,[
+      ["總計","","","",`${totalHours}小時`,Number(totalDeduction||0)]
+    ],{origin:totalRow});
   }else{
-    // 一般員工照畫面格式：
-    // A欄總計、C欄件數合計、E欄工時合計＋「小時」
+    // 一般員工：A總計、C件數合計、E工時合計。
     const totalPieces=currentMonthRawRows.reduce((sum,x)=>sum+(Number(x.piecework_qty||0)),0);
     XLSX.utils.sheet_add_aoa(ws,[
       ["總計","",totalPieces,"",`${totalHours}小時`,"","",""]
@@ -1299,8 +1322,24 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
   newRange.e.r=finalEndRow;
   ws["!ref"]=XLSX.utils.encode_range(newRange);
 
-  const monthValue=isoMonth(document.getElementById("attFilterMonth").value);
-  const selectedName=String(e?.name||"").trim().replace(/[\\/:*?"<>|]/g,"");
+  // 下載檔名：民國年月＋員工姓名。
+  // 月份輸入框可能依需求保持空白，所以不能只讀 input；
+  // 若 input 為空，直接從本次實際匯出的第一筆資料取得月份。
+  let monthValue=isoMonth(document.getElementById("attFilterMonth")?.value||"");
+  if(!monthValue){
+    const firstRow=(filteredAttendanceRows()||[])[0];
+    const rawDate=String(firstRow?.work_date||"").slice(0,10);
+    if(/^\\d{4}-\\d{2}/.test(rawDate)) monthValue=rawDate.slice(0,7);
+  }
+
+  const empSelect=document.getElementById("attFilterEmployee");
+  const empValue=String(empSelect?.value||"");
+  let selectedName="";
+  if(empValue){
+    selectedName=String(empSelect?.selectedOptions?.[0]?.textContent||"").trim();
+  }
+  selectedName=selectedName.replace(/[\\/:*?"<>|]/g,"");
+
   let exportName="全部員工.xlsx";
   if(monthValue){
     const parts=monthValue.split("-");
@@ -1308,7 +1347,7 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
     const rocMonth=String(Number(parts[1])).padStart(2,"0");
     exportName=`${rocYear}${rocMonth}${selectedName||"全部員工"}.xlsx`;
   }
-  // 強制把指定檔名直接交給 SheetJS 下載
+
   XLSX.writeFile(wb,exportName,{compression:true});}
 function exportAttendancePDF(){
   const rows=attendanceExportRows();
