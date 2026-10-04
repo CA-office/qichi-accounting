@@ -1289,7 +1289,7 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
   newRange.e.r=finalEndRow;
   ws["!ref"]=XLSX.utils.encode_range(newRange);
 
-  XLSX.writeFile(wb,`七旗_${e?.name||"全部員工"}_${m.replace("-","")}_打卡件數紀錄.xlsx`)}
+  const [yyyy,mm]=m.split("-").map(Number);const rocYear=yyyy-1911;const exportName=e?.name?`${rocYear}${String(mm).padStart(2,"0")}${e.name}.xlsx`:`${rocYear}${String(mm).padStart(2,"0")}全部員工.xlsx`;XLSX.writeFile(wb,exportName)}
 function exportAttendancePDF(){
   const rows=attendanceExportRows();
   if(!rows.length)return alert("沒有可匯出的打卡/件數紀錄");
