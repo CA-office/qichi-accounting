@@ -1233,28 +1233,31 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
   const outCol=exportHeaders.indexOf("下班");
   const dateCol=exportHeaders.indexOf("日期");
 
+  // 明細格式：扣款千分位；有扣薪才顯示紅字。
   for(let r=firstDataRow;r<=lastDataRow;r++){
-    const hourCell=hourCol>=0?ws[XLSX.utils.encode_cell({r:r,c:hourCol})]:null;
     const dedCell=dedCol>=0?ws[XLSX.utils.encode_cell({r:r,c:dedCol})]:null;
     const d=Number(dedCell?.v)||0;
+    if(dedCell) dedCell.z='#,##0';
+    if(d>0 && dedCell){
+      dedCell.s=dedCell.s||{};
+      dedCell.s.font={...(dedCell.s.font||{}),color:{rgb:"FF0000"}};
+    }
+  }
 
-    // 休假、請假文字與日期顯示紅色；工作時數數字維持黑色。
-  for(let r=1;r<=exportRange.e.r;r++){
+  // 休假／請假格式只處理一次。
+  // 上一版誤把這段放在明細迴圈裡，導致同一組儲存格被重複合併，
+  // Excel 開啟時因此判定檔案內容需要修復。
+  ws["!merges"]=ws["!merges"]||[];
+  for(let r=firstDataRow;r<=lastDataRow;r++){
     const restCell=inCol>=0?ws[XLSX.utils.encode_cell({r:r,c:inCol})]:null;
     const leaveCell=hourCol>=0?ws[XLSX.utils.encode_cell({r:r,c:hourCol})]:null;
-    const isRest=restCell && String(restCell.v).trim()==="休假";
-    const isLeave=leaveCell && String(leaveCell.v).trim()==="請假";
+    const isRest=!!restCell && String(restCell.v).trim()==="休假";
+    const isLeave=!!leaveCell && String(leaveCell.v).trim()==="請假";
+
     if(isRest || isLeave){
       const statusCell=isRest?restCell:leaveCell;
       statusCell.s=statusCell.s||{};
       statusCell.s.font={...(statusCell.s.font||{}),color:{rgb:"FF0000"}};
-
-      // 「休假」跨上班＋下班兩欄合併並置中，呈現你圖片的格式。
-      if(isRest && inCol>=0 && outCol>=0){
-        ws["!merges"]=ws["!merges"]||[];
-        ws["!merges"].push({s:{r:r,c:inCol},e:{r:r,c:outCol}});
-        statusCell.s.alignment={horizontal:"center",vertical:"center"};
-      }
 
       const dateCell=dateCol>=0?ws[XLSX.utils.encode_cell({r:r,c:dateCol})]:null;
       if(dateCell){
@@ -1262,13 +1265,17 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
         dateCell.s.font={...(dateCell.s.font||{}),color:{rgb:"FF0000"}};
       }
     }
-  }
 
-  // 只要有扣薪，扣薪金額顯示紅色
-    if(dedCell){dedCell.z='#,##0';}
-    if(d>0 && dedCell){
-      dedCell.s=dedCell.s||{};
-      dedCell.s.font={...(dedCell.s.font||{}),color:{rgb:"FF0000"}};
+    // 休假跨「上班＋下班」兩欄置中；每列只加入一次 merge。
+    if(isRest && inCol>=0 && outCol>=0){
+      const alreadyMerged=ws["!merges"].some(m=>
+        m.s.r===r && m.e.r===r && m.s.c===inCol && m.e.c===outCol
+      );
+      if(!alreadyMerged){
+        ws["!merges"].push({s:{r:r,c:inCol},e:{r:r,c:outCol}});
+      }
+      restCell.s=restCell.s||{};
+      restCell.s.alignment={horizontal:"center",vertical:"center"};
     }
   }
 
@@ -1344,21 +1351,30 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
   let exportEmployeeName=exportNames.length===1 ? exportNames[0] : "全部員工";
   exportEmployeeName=exportEmployeeName.replace(/[\\/:*?"<>|]/g,"");
 
-  let rocYm="";
-  if(exportDates.length){
-    // 匯出列日期通常是 MM/DD；年份取目前篩選月份，若欄位空白則由原始資料取得。
-    let fullMonth=isoMonth(document.getElementById("attFilterMonth")?.value||"");
-    if(!fullMonth){
-      const rawRows=filteredAttendanceRows()||[];
-      const rawDate=String(rawRows[0]?.work_date||"").slice(0,10);
-      if(/^\\d{4}-\\d{2}/.test(rawDate)) fullMonth=rawDate.slice(0,7);
-    }
-    if(fullMonth){
-      const [yyyy,mm]=fullMonth.split("-").map(Number);
-      rocYm=`${yyyy-1911}${String(mm).padStart(2,"0")}`;
-    }
+  // 年月：優先讀畫面月份；若月份欄空白，直接從本次匯出的日期 MM/DD 取得月份。
+  // 年份則從原始打卡紀錄取得；若取不到才使用目前年份。
+  let exportYear=new Date().getFullYear();
+  let exportMonth="";
+
+  const filterMonth=isoMonth(document.getElementById("attFilterMonth")?.value||"");
+  if(filterMonth){
+    const [fy,fm]=filterMonth.split("-").map(Number);
+    exportYear=fy;
+    exportMonth=String(fm).padStart(2,"0");
   }
 
+  if(!exportMonth && exportDates.length){
+    const md=String(exportDates[0]).match(/^(\d{1,2})[\/-](\d{1,2})/);
+    if(md) exportMonth=String(Number(md[1])).padStart(2,"0");
+  }
+
+  try{
+    const rawRows=filteredAttendanceRows()||[];
+    const rawDate=String(rawRows[0]?.work_date||"").slice(0,10);
+    if(/^\d{4}-\d{2}/.test(rawDate)) exportYear=Number(rawDate.slice(0,4));
+  }catch(_){}
+
+  const rocYm=exportMonth?`${exportYear-1911}${exportMonth}`:"";
   const exportName=`${rocYm}${exportEmployeeName}.xlsx`;
   XLSX.writeFile(wb,exportName,{compression:true});}
 function exportAttendancePDF(){
