@@ -842,7 +842,7 @@ window.addEventListener('DOMContentLoaded',()=>{setupAttendanceQuickDate();setup
 </nav></aside><main class="main">
 <section id="home" class="section active"><div class="page-head"><div><h1>首頁</h1><p>七旗公司目前帳務與薪資概況</p></div></div><div class="cards"><div class="stat"><div class="label">本月支出</div><strong id="homeExpense">$0</strong></div><div class="stat"><div class="label">本月存入</div><strong id="homeIncome">$0</strong></div><div class="stat"><div class="label">目前存款餘額</div><strong id="homeBalance">$0</strong></div><div class="stat"><div class="label">員工人數</div><strong id="homeEmployees">0</strong></div></div><div class="card"><h2>系統說明</h2><div class="notice">薪資結算分為「單計帳制」與「月薪制」。每位員工可以獨立設定；單計帳制可輸入件數、時數與不同單價，月薪制則輸入月薪並套用打卡扣款。</div></div></section>
 <section id="employees" class="section"><div class="page-head"><div><h1>七旗薪資｜員工列表</h1><p>新增與管理七旗員工、計薪設定及銀行資料</p></div></div><div class="card"><h2 id="empTitle">新增員工資料</h2><div class="grid">
-<div class="field"><label>姓名</label><input id="eName"></div><div class="field"><label>計薪方式</label><select id="eMethod"><option value="piece">單計帳制</option><option value="monthly">月薪制</option></select></div><div class="field"><label>預設月薪</label><input id="eSalary" type="number" value="0"></div>
+<div class="field"><label>姓名</label><input id="eName"></div><div class="field"><label>計薪方式</label><select id="eMethod"><option value="piece">單計帳制</option><option value="monthly">月薪制</option><option value="hourly">時薪制</option></select></div><div class="field"><label>預設月薪</label><input id="eSalary" type="number" value="0"></div>
 <div class="field"><label>單價</label><input id="eUnitPrice" type="number" value="0"></div><div class="field"><label>時薪</label><input id="eHourlyRate" type="number" value="0"></div><div class="field"><label>加給</label><input id="eAllowance" type="number" value="0"></div>
 <div class="field"><label>銀行代碼</label><input id="eBankCode"></div><div class="field"><label>銀行帳號</label><input id="eAccountNo"></div>
 <div class="field"><label>備註</label><input id="eNote"></div></div><div class="form-actions"><button onclick="saveEmployee()">儲存員工</button><button class="secondary" onclick="resetEmployeeForm()">清除</button></div></div>
@@ -858,7 +858,7 @@ window.addEventListener('DOMContentLoaded',()=>{setupAttendanceQuickDate();setup
   <button class="primary" onclick="exportAttendanceExcel()">Excel 匯出</button>
   <button class="secondary" onclick="exportAttendancePDF()">PDF 匯出</button>
 </div>
-<div class="table-wrap"><table class="table"><thead><tr id="attListHead"><th>日期</th><th>員工</th><th>件數</th><th>上班</th><th>下班</th><th>工作時數</th><th>扣款</th><th>時薪</th><th>修改</th><th>刪除</th></tr></thead><tbody id="attList"></tbody></table></div></div></section><section id="payroll" class="section"><div class="page-head"><div><h1>七旗薪資｜薪資結算</h1><p>連動員工薪資設定、銀行資料與當月打卡／件數紀錄</p></div></div><div class="card"><div class="grid"><div class="field"><label>月份（可手動輸入）</label><input id="pMonth" type="text" inputmode="numeric" placeholder="例如：2026/09"></div><div class="field"><label>員工</label><select id="pEmployee"></select></div></div><div id="attendanceSummary" class="notice" style="margin-top:12px">選擇員工與月份後，自動讀取該月打卡紀錄。</div></div>
+<div class="table-wrap"><table class="table"><thead><tr id="attListHead"><th>日期</th><th>員工</th><th class="piece-col" data-piece-col>件數</th><th>上班</th><th>下班</th><th>工作時數</th><th>扣款</th><th>時薪</th><th>修改</th><th>刪除</th></tr></thead><tbody id="attList"></tbody></table></div></div></section><section id="payroll" class="section"><div class="page-head"><div><h1>七旗薪資｜薪資結算</h1><p>連動員工薪資設定、銀行資料與當月打卡／件數紀錄</p></div></div><div class="card"><div class="grid"><div class="field"><label>月份（可手動輸入）</label><input id="pMonth" type="text" inputmode="numeric" placeholder="例如：2026/09"></div><div class="field"><label>員工</label><select id="pEmployee"></select></div></div><div id="attendanceSummary" class="notice" style="margin-top:12px">選擇員工與月份後，自動讀取該月打卡紀錄。</div></div>
 <div class="card"><h2>單計帳制</h2><div class="notice">自動讀取員工設定與當月打卡／件數紀錄。</div><div class="form-actions"><button onclick="calculatePiece()">計算</button><button class="secondary" onclick="savePayrollPreview('piece')">儲存</button></div><div id="pieceResult" class="notice" style="margin-top:12px">尚未計算</div></div>
 <div class="card"><h2>月薪制</h2><div class="notice">請假扣薪採 24 天制：日薪＝月薪 ÷ 24；請假時數依每日 8 小時計算。</div><div class="form-actions"><button onclick="calculateMonthly()">計算</button><button class="secondary" onclick="savePayrollPreview('monthly')">儲存</button></div><div id="monthlyResult" class="notice" style="margin-top:12px">尚未計算</div></div>
 <div class="card"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px"><h2 style="margin:0">薪資預覽</h2><button type="button" class="secondary" onclick="previewAllEmployees()">全部員工</button></div><div class="preview-grid"><div class="preview-box"><h3>薪資紀錄預覽</h3><div id="recordPreview" class="empty">請先選擇月份與員工</div></div><div class="preview-box"><h3>薪資結果預覽</h3><div class="table-wrap"><table class="table" style="min-width:520px"><thead><tr><th>姓名</th><th>銀行代碼</th><th>銀行帳號</th><th>實領薪資</th></tr></thead><tbody id="resultPreview"></tbody></table></div><div class="export-actions"><button class="primary" onclick="exportPayrollExcel()">Excel 輸出</button><button class="secondary" onclick="exportPayrollPDF()">PDF 輸出</button></div></div></div></div>
@@ -1025,7 +1025,7 @@ async function startApp(user){document.getElementById("login").classList.add("hi
 async function loadAll(){const tasks=[loadEmployees,loadBanks,loadAttendance,loadPayroll,loadCash,loadInvoices,loadBoard];const results=await Promise.allSettled(tasks.map(fn=>Promise.resolve().then(fn)));results.forEach((r,i)=>{if(r.status==="rejected")console.error("載入失敗："+tasks[i].name,r.reason)});renderEmployees();updateHome()}
 async function loadEmployees(){const r=await sb.from("employees").select("*").order("name");if(r.error){console.warn(r.error);return}employees=r.data||[];renderEmployees();fillEmployeeSelects()}
 function employeeBank(id){return bankAccounts.find(b=>String(b.employee_id)===String(id))||{}}
-function renderEmployees(){const el=document.getElementById("empList");el.innerHTML=employees.length?employees.map(e=>{const b=employeeBank(e.id);return `<tr><td>${esc(e.name)}</td><td>${e.pay_type==="monthly"?"月薪制":"單計帳制"}</td><td>${money(e.base_salary)}</td><td>${money(e.unit_price)}</td><td>${money(e.hourly_rate)}</td><td>${money(e.allowance)}</td><td>${esc(b.bank_code||"")}</td><td>${esc(b.account_number||"")}</td><td>${esc(e.note||"")}</td><td><button class="secondary" onclick="editEmployee('${e.id}')">修改</button> <button class="danger" onclick="deleteEmployee('${e.id}')">刪除</button></td></tr>`}).join(""):`<tr><td colspan="10" class="empty">目前沒有員工資料</td></tr>`}
+function renderEmployees(){const el=document.getElementById("empList");el.innerHTML=employees.length?employees.map(e=>{const b=employeeBank(e.id);return `<tr><td>${esc(e.name)}</td><td>${e.pay_type==="monthly"?"月薪制":e.pay_type==="hourly"?"時薪制":"單計帳制"}</td><td>${money(e.base_salary)}</td><td>${money(e.unit_price)}</td><td>${money(e.hourly_rate)}</td><td>${money(e.allowance)}</td><td>${esc(b.bank_code||"")}</td><td>${esc(b.account_number||"")}</td><td>${esc(e.note||"")}</td><td><button class="secondary" onclick="editEmployee('${e.id}')">修改</button> <button class="danger" onclick="deleteEmployee('${e.id}')">刪除</button></td></tr>`}).join(""):`<tr><td colspan="10" class="empty">目前沒有員工資料</td></tr>`}
 function fillEmployeeSelects(){const o=`<option value="">請選擇員工</option>`+employees.map(e=>`<option value="${esc(e.id)}">${esc(e.name)}</option>`).join("");["aEmployee","pEmployee","attFilterEmployee"].forEach(id=>document.getElementById(id).innerHTML=o)}
 function resetEmployeeForm(){editingEmployeeId=null;document.getElementById("empTitle").textContent="新增員工資料";["eName","eBankCode","eAccountNo","eNote"].forEach(id=>document.getElementById(id).value="");["eSalary","eUnitPrice","eHourlyRate","eAllowance"].forEach(id=>document.getElementById(id).value=0);document.getElementById("eMethod").value="piece"}
 function editEmployee(id){const e=employees.find(x=>String(x.id)===String(id));if(!e)return;const b=employeeBank(e.id);editingEmployeeId=e.id;document.getElementById("empTitle").textContent="修改員工資料";document.getElementById("eName").value=e.name||"";document.getElementById("eMethod").value=e.pay_type||"piece";document.getElementById("eSalary").value=e.base_salary||0;document.getElementById("eUnitPrice").value=e.unit_price||0;document.getElementById("eHourlyRate").value=e.hourly_rate||0;document.getElementById("eAllowance").value=e.allowance||0;document.getElementById("eBankCode").value=b.bank_code||"";document.getElementById("eAccountNo").value=b.account_number||"";document.getElementById("eNote").value=e.note||"";document.getElementById("employees").scrollIntoView({behavior:"smooth",block:"start"})}
@@ -1135,6 +1135,21 @@ function isSpecialAttendanceEmployeeName(name){
   const n=String(name||"").replace(/\s+/g,"");
   return ["王瓈巧","王燦巧","王璨巧","王琛巧","王璟巧","李佳樺"].includes(n);
 }
+
+function isHourlyEmployeeById(employeeId){
+  const e=(employees||[]).find(x=>String(x.id)===String(employeeId));
+  return String(e?.pay_type||"")==="hourly";
+}
+function syncHourlyPieceColumn(){
+  const sel=document.getElementById("attFilterEmployee");
+  const employeeId=sel?.value||"";
+  const hourly=employeeId && isHourlyEmployeeById(employeeId);
+  const table=document.querySelector("#attendanceTable");
+  if(!table) return;
+  table.querySelectorAll("[data-piece-col], .piece-col").forEach(el=>{
+    el.style.display=hourly?"none":"";
+  });
+}
 function renderAttendanceList(){
   const rows=filteredAttendanceRows();
   const empId=document.getElementById("attFilterEmployee")?.value||"";
@@ -1144,8 +1159,8 @@ function renderAttendanceList(){
   const head=document.getElementById("attListHead");
   if(head){
     head.innerHTML=special
-      ? "<th>日期</th><th>員工</th><th>上班</th><th>下班</th><th>工作時數</th><th>扣款</th><th>件數</th><th>時薪</th><th>修改</th><th>刪除</th>"
-      : "<th>日期</th><th>員工</th><th>件數</th><th>上班</th><th>下班</th><th>工作時數</th><th>扣款</th><th>時薪</th><th>修改</th><th>刪除</th>";
+      ? "<th>日期</th><th>員工</th><th>上班</th><th>下班</th><th>工作時數</th><th>扣款</th><th class="piece-col" data-piece-col>件數</th><th>時薪</th><th>修改</th><th>刪除</th>"
+      : "<th>日期</th><th>員工</th><th class="piece-col" data-piece-col>件數</th><th>上班</th><th>下班</th><th>工作時數</th><th>扣款</th><th>時薪</th><th>修改</th><th>刪除</th>";
   }
 
   document.getElementById("attList").innerHTML=rows.map(x=>{
@@ -1204,7 +1219,12 @@ function attendanceExportRows(){
       : base;
   });
 }
-function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.length)return alert("沒有可匯出的打卡/件數紀錄");const emp=document.getElementById("attFilterEmployee").value,e=employees.find(x=>String(x.id)===String(emp)),m=isoMonth(document.getElementById("attFilterMonth").value)||"全部月份";const ws=XLSX.utils.json_to_sheet(rows);ws["!cols"]=Array.from({length:8},()=>({wch:10})); /* Excel 欄寬數值 10 */const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"打卡件數紀錄");
+function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.length)return alert("沒有可匯出的打卡/件數紀錄");const emp=document.getElementById("attFilterEmployee").value,e=employees.find(x=>String(x.id)===String(emp)),m=isoMonth(document.getElementById("attFilterMonth").value)||"全部月份";// 時薪制員工匯出 Excel 時不需要「件數」欄位。
+  const exportEmployeeIds=[...new Set((filteredAttendanceRows()||[]).map(x=>String(x.employee_id||"")).filter(Boolean))];
+  if(exportEmployeeIds.length===1 && isHourlyEmployeeById(exportEmployeeIds[0])){
+    rows=rows.map(r=>{const o={...r};delete o["件數"];return o;});
+  }
+  const ws=XLSX.utils.json_to_sheet(rows);ws["!cols"]=Array.from({length:8},()=>({wch:10})); /* Excel 欄寬數值 10 */const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"打卡件數紀錄");
   // 七旗打卡 Excel：最下方補「工作時數、扣薪」總計
   const exportRange=XLSX.utils.decode_range(ws["!ref"]);
   const firstDataRow=1; // 0-based：第 1 列是標題
@@ -2192,4 +2212,17 @@ document.addEventListener("DOMContentLoaded",()=>{
   });
 });
 
+
+document.addEventListener("change",function(ev){
+  if(ev.target && ev.target.id==="attFilterEmployee"){
+    setTimeout(syncHourlyPieceColumn,0);
+  }
+});
+document.addEventListener("DOMContentLoaded",function(){
+  const table=document.querySelector("#attendanceTable");
+  if(table){
+    new MutationObserver(()=>syncHourlyPieceColumn()).observe(table,{childList:true,subtree:true});
+    syncHourlyPieceColumn();
+  }
+});
 </script></body></html>
