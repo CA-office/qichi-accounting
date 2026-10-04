@@ -1090,6 +1090,7 @@ function calcWangCanQiaoMonthly(e,rows){
 
 function monthlyHourRate(employeeId){const e=employees.find(v=>String(v.id)===String(employeeId));const base=Number(e?.base_salary||0);return Math.floor((base/24)/8)||0}
 function autoAttendanceDeduction(x){
+  if(String(arguments[0]?.status||"").trim()==="休假") return 0; // 休假不扣薪；請假不可套用此條件
   const e=employees.find(v=>String(v.id)===String(x.employee_id));
   if(!e||e.pay_type!=="monthly")return 0;
   const h=calcWorkedHours(x.clock_in,x.clock_out,x.status);
@@ -1158,7 +1159,7 @@ function attendanceExportRows(){
       "時薪":Number(x.hourly_rate||0)
     };
     return special
-      ? {"員工":base["員工"],"日期":base["日期"],"上班":base["上班"],"下班":base["下班"],"工作時數":base["工作時數"],"扣款":base["扣款"],"件數":base["件數"],"時薪":base["時薪"]}
+      ? {"員工":base["員工"],"日期":base["日期"],"上班":x.status==="休假"?"休假":base["上班"],"下班":x.status==="休假"?"":base["下班"],"工作時數":base["工作時數"],"扣款":base["扣款"],"件數":base["件數"],"時薪":base["時薪"]}
       : base;
   });
 }
@@ -1177,7 +1178,16 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
     totalHours+=h;
     totalDeduction+=d;
 
-    // 只要有扣薪，扣薪金額顯示紅色
+    // 休假：上班欄顯示紅色「休假」
+  for(let r=1;r<=exportRange.e.r;r++){
+    const statusCell=ws[XLSX.utils.encode_cell({r:r,c:2})];
+    if(statusCell && String(statusCell.v).trim()==="休假"){
+      statusCell.s=statusCell.s||{};
+      statusCell.s.font={...(statusCell.s.font||{}),color:{rgb:"FF0000"}};
+    }
+  }
+
+  // 只要有扣薪，扣薪金額顯示紅色
     if(dedCell){dedCell.z='#,##0';}
     if(d>0 && dedCell){
       dedCell.s=dedCell.s||{};
