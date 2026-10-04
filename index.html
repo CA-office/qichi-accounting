@@ -1109,14 +1109,24 @@ function autoAttendanceDeduction(x){
   const h=calcWorkedHours(x.clock_in,x.clock_out,x.status);
   const name=String(e.name||"").replace(/\s+/g,"");
 
-  // 王燦巧：整日請假/缺勤用日薪（月薪÷24）扣款。
-  // 36,000÷24＝1,500；部分少時才用整數時薪 187 計算。
+  // 王瓈巧：整日請假用日薪1,500；部分不足工時用時薪187。
   if(["王瓈巧","王燦巧","王璨巧","王琛巧","王璟巧"].includes(name)){
     const dayRate=(Number(e.base_salary||0)/24)||0;
-    if(h===0 && (x.status==="請假" || x.status==="缺勤")){
+    if(h===0 && x.status==="請假"){
       return Math.round(dayRate);
     }
     return Math.round(Math.max(0,8-h)*Math.floor(dayRate/8));
+  }
+
+  // 李孟樺固定薪資結構：
+  // 月薪30,000／日薪1,250／時薪156。
+  // 整日請假或應上班日完全未上班，扣日薪1,250；
+  // 部分不足工時才用156元/小時計算；休假不扣薪。
+  if(name==="李孟樺"){
+    const status=String(x.status||"").trim();
+    if(status==="休假") return 0;
+    if(status==="請假" || h<=0) return 1250;
+    return Math.round(Math.max(0,8-h)*156);
   }
 
   return Math.max(0,8-h)*monthlyHourRate(x.employee_id);
