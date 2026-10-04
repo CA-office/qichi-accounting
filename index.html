@@ -1159,7 +1159,11 @@ function attendanceExportRows(){
       "時薪":Number(x.hourly_rate||0)
     };
     return special
-      ? {"員工":base["員工"],"日期":base["日期"],"上班":(x.status==="休假"||x.status==="請假")?x.status:base["上班"],"下班":(x.status==="休假"||x.status==="請假")?"":base["下班"],"工作時數":base["工作時數"],"扣款":base["扣款"],"件數":base["件數"],"時薪":base["時薪"]}
+      ? (x.status==="休假"
+          ? {"員工":base["員工"],"日期":base["日期"],"上班":"休假","下班":"","工作時數":0,"扣款":"","件數":base["件數"],"時薪":base["時薪"]}
+          : x.status==="請假"
+            ? {"員工":base["員工"],"日期":base["日期"],"上班":"","下班":"","工作時數":"請假","扣款":base["扣款"],"件數":base["件數"],"時薪":base["時薪"]}
+            : {"員工":base["員工"],"日期":base["日期"],"上班":base["上班"],"下班":base["下班"],"工作時數":base["工作時數"],"扣款":base["扣款"]||"","件數":base["件數"],"時薪":base["時薪"]})
       : base;
   });
 }
@@ -1180,8 +1184,12 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
 
     // 休假：上班欄顯示紅色「休假」
   for(let r=1;r<=exportRange.e.r;r++){
-    const statusCell=ws[XLSX.utils.encode_cell({r:r,c:2})];
-    if(statusCell && (String(statusCell.v).trim()==="休假" || String(statusCell.v).trim()==="請假")){
+    const restCell=ws[XLSX.utils.encode_cell({r:r,c:2})];
+    const leaveCell=ws[XLSX.utils.encode_cell({r:r,c:4})];
+    const isRest=restCell && String(restCell.v).trim()==="休假";
+    const isLeave=leaveCell && String(leaveCell.v).trim()==="請假";
+    if(isRest || isLeave){
+      const statusCell=isRest?restCell:leaveCell;
       statusCell.s=statusCell.s||{};
       statusCell.s.font={...(statusCell.s.font||{}),color:{rgb:"FF0000"}};
       const dateCell=ws[XLSX.utils.encode_cell({r:r,c:1})];
@@ -1206,7 +1214,6 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
 
   if(selectedEmployeeName==="王瓈巧"){
     // 同一天有多筆打卡（例如 9/10 上午、下午）仍只算 1 個上班天。
-    const filteredRaw=filteredAttendanceRows();
     const filteredRaw=filteredAttendanceRows();
     const workDateSet=new Set();
     const restDateSet=new Set();
