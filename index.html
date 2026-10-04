@@ -1090,8 +1090,14 @@ function calcWangCanQiaoMonthly(e,rows){
   const net=Math.max(0,base+fixedBonus+hourAdjustment-leaveDeduction);
 
   return {
-    base,fixedBonus,dayRate,hourly,actualHours,workedDays,fullLeaveDays,
-    standardHours,hourDiff,hourAdjustment,leaveDeduction,gross,deduction,net
+    base,fixedBonus,dayRate,hourly,actualHours,
+    // 薪資預覽的「上班天數／應上工時」必須扣除整日請假
+    workedDays:attendanceBaseDays,
+    fullLeaveDays,
+    standardHours:attendanceBaseHours,
+    scheduledDays:workedDays,
+    scheduledHours:standardHours,
+    hourDiff,hourAdjustment,leaveDeduction,gross,deduction,net
   };
 }
 
