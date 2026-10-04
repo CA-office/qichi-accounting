@@ -858,7 +858,7 @@ window.addEventListener('DOMContentLoaded',()=>{setupAttendanceQuickDate();setup
   <button class="primary" onclick="exportAttendanceExcel()">Excel 匯出</button>
   <button class="secondary" onclick="exportAttendancePDF()">PDF 匯出</button>
 </div>
-<div class="table-wrap"><table class="table"><thead><tr id="attListHead"><th>日期</th><th>員工</th><th class="piece-col" data-piece-col>件數</th><th>上班</th><th>下班</th><th>工作時數</th><th>扣款</th><th>時薪</th><th>修改</th><th>刪除</th></tr></thead><tbody id="attList"></tbody></table></div></div></section><section id="payroll" class="section"><div class="page-head"><div><h1>七旗薪資｜薪資結算</h1><p>連動員工薪資設定、銀行資料與當月打卡／件數紀錄</p></div></div><div class="card"><div class="grid"><div class="field"><label>月份（可手動輸入）</label><input id="pMonth" type="text" inputmode="numeric" placeholder="例如：2026/09"></div><div class="field"><label>員工</label><select id="pEmployee"></select></div></div><div id="attendanceSummary" class="notice" style="margin-top:12px">選擇員工與月份後，自動讀取該月打卡紀錄。</div></div>
+<div class="table-wrap"><table class="table"><thead><tr id="attListHead"><th>日期</th><th>員工</th><th>件數</th><th>上班</th><th>下班</th><th>工作時數</th><th>扣款</th><th>時薪</th><th>修改</th><th>刪除</th></tr></thead><tbody id="attList"></tbody></table></div></div></section><section id="payroll" class="section"><div class="page-head"><div><h1>七旗薪資｜薪資結算</h1><p>連動員工薪資設定、銀行資料與當月打卡／件數紀錄</p></div></div><div class="card"><div class="grid"><div class="field"><label>月份（可手動輸入）</label><input id="pMonth" type="text" inputmode="numeric" placeholder="例如：2026/09"></div><div class="field"><label>員工</label><select id="pEmployee"></select></div></div><div id="attendanceSummary" class="notice" style="margin-top:12px">選擇員工與月份後，自動讀取該月打卡紀錄。</div></div>
 <div class="card"><h2>單計帳制</h2><div class="notice">自動讀取員工設定與當月打卡／件數紀錄。</div><div class="form-actions"><button onclick="calculatePiece()">計算</button><button class="secondary" onclick="savePayrollPreview('piece')">儲存</button></div><div id="pieceResult" class="notice" style="margin-top:12px">尚未計算</div></div>
 <div class="card"><h2>月薪制</h2><div class="notice">請假扣薪採 24 天制：日薪＝月薪 ÷ 24；請假時數依每日 8 小時計算。</div><div class="form-actions"><button onclick="calculateMonthly()">計算</button><button class="secondary" onclick="savePayrollPreview('monthly')">儲存</button></div><div id="monthlyResult" class="notice" style="margin-top:12px">尚未計算</div></div>
 <div class="card"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px"><h2 style="margin:0">薪資預覽</h2><button type="button" class="secondary" onclick="previewAllEmployees()">全部員工</button></div><div class="preview-grid"><div class="preview-box"><h3>薪資紀錄預覽</h3><div id="recordPreview" class="empty">請先選擇月份與員工</div></div><div class="preview-box"><h3>薪資結果預覽</h3><div class="table-wrap"><table class="table" style="min-width:520px"><thead><tr><th>姓名</th><th>銀行代碼</th><th>銀行帳號</th><th>實領薪資</th></tr></thead><tbody id="resultPreview"></tbody></table></div><div class="export-actions"><button class="primary" onclick="exportPayrollExcel()">Excel 輸出</button><button class="secondary" onclick="exportPayrollPDF()">PDF 輸出</button></div></div></div></div>
@@ -1135,21 +1135,6 @@ function isSpecialAttendanceEmployeeName(name){
   const n=String(name||"").replace(/\s+/g,"");
   return ["王瓈巧","王燦巧","王璨巧","王琛巧","王璟巧","李佳樺"].includes(n);
 }
-
-function isHourlyEmployeeById(employeeId){
-  const e=(employees||[]).find(x=>String(x.id)===String(employeeId));
-  return String(e?.pay_type||"")==="hourly";
-}
-function syncHourlyPieceColumn(){
-  const sel=document.getElementById("attFilterEmployee");
-  const employeeId=sel?.value||"";
-  const hourly=employeeId && isHourlyEmployeeById(employeeId);
-  const table=document.querySelector("#attendanceTable");
-  if(!table) return;
-  table.querySelectorAll("[data-piece-col], .piece-col").forEach(el=>{
-    el.style.display=hourly?"none":"";
-  });
-}
 function renderAttendanceList(){
   const rows=filteredAttendanceRows();
   const empId=document.getElementById("attFilterEmployee")?.value||"";
@@ -1159,8 +1144,8 @@ function renderAttendanceList(){
   const head=document.getElementById("attListHead");
   if(head){
     head.innerHTML=special
-      ? "<th>日期</th><th>員工</th><th>上班</th><th>下班</th><th>工作時數</th><th>扣款</th><th class="piece-col" data-piece-col>件數</th><th>時薪</th><th>修改</th><th>刪除</th>"
-      : "<th>日期</th><th>員工</th><th class="piece-col" data-piece-col>件數</th><th>上班</th><th>下班</th><th>工作時數</th><th>扣款</th><th>時薪</th><th>修改</th><th>刪除</th>";
+      ? "<th>日期</th><th>員工</th><th>上班</th><th>下班</th><th>工作時數</th><th>扣款</th><th>件數</th><th>時薪</th><th>修改</th><th>刪除</th>"
+      : "<th>日期</th><th>員工</th><th>件數</th><th>上班</th><th>下班</th><th>工作時數</th><th>扣款</th><th>時薪</th><th>修改</th><th>刪除</th>";
   }
 
   document.getElementById("attList").innerHTML=rows.map(x=>{
@@ -1219,12 +1204,7 @@ function attendanceExportRows(){
       : base;
   });
 }
-function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.length)return alert("沒有可匯出的打卡/件數紀錄");const emp=document.getElementById("attFilterEmployee").value,e=employees.find(x=>String(x.id)===String(emp)),m=isoMonth(document.getElementById("attFilterMonth").value)||"全部月份";// 時薪制員工匯出 Excel 時不需要「件數」欄位。
-  const exportEmployeeIds=[...new Set((filteredAttendanceRows()||[]).map(x=>String(x.employee_id||"")).filter(Boolean))];
-  if(exportEmployeeIds.length===1 && isHourlyEmployeeById(exportEmployeeIds[0])){
-    rows=rows.map(r=>{const o={...r};delete o["件數"];return o;});
-  }
-  const ws=XLSX.utils.json_to_sheet(rows);ws["!cols"]=Array.from({length:8},()=>({wch:10})); /* Excel 欄寬數值 10 */const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"打卡件數紀錄");
+function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.length)return alert("沒有可匯出的打卡/件數紀錄");const emp=document.getElementById("attFilterEmployee").value,e=employees.find(x=>String(x.id)===String(emp)),m=isoMonth(document.getElementById("attFilterMonth").value)||"全部月份";const ws=XLSX.utils.json_to_sheet(rows);ws["!cols"]=Array.from({length:8},()=>({wch:10})); /* Excel 欄寬數值 10 */const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"打卡件數紀錄");
   // 七旗打卡 Excel：最下方補「工作時數、扣薪」總計
   const exportRange=XLSX.utils.decode_range(ws["!ref"]);
   const firstDataRow=1; // 0-based：第 1 列是標題
@@ -2213,16 +2193,35 @@ document.addEventListener("DOMContentLoaded",()=>{
 });
 
 
-document.addEventListener("change",function(ev){
-  if(ev.target && ev.target.id==="attFilterEmployee"){
-    setTimeout(syncHourlyPieceColumn,0);
+/* 時薪制：打卡紀錄隱藏件數欄。此段放在既有程式最後，不改登入流程。 */
+(function(){
+  function qichiHourlySelected(){
+    var sel=document.getElementById("attFilterEmployee");
+    if(!sel || !sel.value || typeof employees==="undefined") return false;
+    var emp=(employees||[]).find(function(x){return String(x.id)===String(sel.value);});
+    return !!emp && String(emp.pay_type||"")==="hourly";
   }
-});
-document.addEventListener("DOMContentLoaded",function(){
-  const table=document.querySelector("#attendanceTable");
-  if(table){
-    new MutationObserver(()=>syncHourlyPieceColumn()).observe(table,{childList:true,subtree:true});
-    syncHourlyPieceColumn();
+  function qichiSyncHourlyColumns(){
+    var table=document.getElementById("attendanceTable");
+    if(!table) return;
+    var hourly=qichiHourlySelected();
+    var head=Array.from(table.querySelectorAll("thead th"));
+    var pieceIndex=head.findIndex(function(th){return th.textContent.trim()==="件數";});
+    if(pieceIndex<0) return;
+    table.querySelectorAll("tr").forEach(function(tr){
+      var cells=tr.children;
+      if(cells && cells[pieceIndex]) cells[pieceIndex].style.display=hourly?"none":"";
+    });
   }
-});
+  document.addEventListener("change",function(ev){
+    if(ev.target && ev.target.id==="attFilterEmployee") setTimeout(qichiSyncHourlyColumns,0);
+  });
+  document.addEventListener("DOMContentLoaded",function(){
+    var table=document.getElementById("attendanceTable");
+    if(table && window.MutationObserver){
+      new MutationObserver(qichiSyncHourlyColumns).observe(table,{childList:true,subtree:true});
+    }
+    setTimeout(qichiSyncHourlyColumns,0);
+  });
+})();
 </script></body></html>
