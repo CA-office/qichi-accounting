@@ -1230,6 +1230,7 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
   const hourCol=exportHeaders.indexOf("工作時數");
   const dedCol=exportHeaders.indexOf("扣款");
   const inCol=exportHeaders.indexOf("上班");
+  const outCol=exportHeaders.indexOf("下班");
   const dateCol=exportHeaders.indexOf("日期");
 
   for(let r=firstDataRow;r<=lastDataRow;r++){
@@ -1247,6 +1248,14 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
       const statusCell=isRest?restCell:leaveCell;
       statusCell.s=statusCell.s||{};
       statusCell.s.font={...(statusCell.s.font||{}),color:{rgb:"FF0000"}};
+
+      // 「休假」跨上班＋下班兩欄合併並置中，呈現你圖片的格式。
+      if(isRest && inCol>=0 && outCol>=0){
+        ws["!merges"]=ws["!merges"]||[];
+        ws["!merges"].push({s:{r:r,c:inCol},e:{r:r,c:outCol}});
+        statusCell.s.alignment={horizontal:"center",vertical:"center"};
+      }
+
       const dateCell=dateCol>=0?ws[XLSX.utils.encode_cell({r:r,c:dateCol})]:null;
       if(dateCell){
         dateCell.s=dateCell.s||{};
@@ -1296,6 +1305,11 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
     XLSX.utils.sheet_add_aoa(ws,[
       ["總計","","","",`${totalHours}小時`,Number(totalDeduction||0)]
     ],{origin:totalRow});
+    // 扣款總計與上方扣款欄一致：千分位、0位小數、不顯示$。
+    const deductionTotalCell=ws[XLSX.utils.encode_cell({r:totalRow,c:5})];
+    if(deductionTotalCell){
+      deductionTotalCell.z='#,##0';
+    }
   }else{
     // 一般員工：A總計、C件數合計、E工時合計。
     const totalPieces=currentMonthRawRows.reduce((sum,x)=>sum+(Number(x.piecework_qty||0)),0);
@@ -1322,32 +1336,30 @@ function exportAttendanceExcel(){const rows=attendanceExportRows();if(!rows.leng
   newRange.e.r=finalEndRow;
   ws["!ref"]=XLSX.utils.encode_range(newRange);
 
-  // 下載檔名：民國年月＋員工姓名。
-  // 月份輸入框可能依需求保持空白，所以不能只讀 input；
-  // 若 input 為空，直接從本次實際匯出的第一筆資料取得月份。
-  let monthValue=isoMonth(document.getElementById("attFilterMonth")?.value||"");
-  if(!monthValue){
-    const firstRow=(filteredAttendanceRows()||[])[0];
-    const rawDate=String(firstRow?.work_date||"").slice(0,10);
-    if(/^\\d{4}-\\d{2}/.test(rawDate)) monthValue=rawDate.slice(0,7);
+  // Excel 檔名直接從「這次實際匯出的內容」判斷，不再依賴畫面選單值。
+  // 單一員工：11509李孟樺.xlsx；多位員工：11509全部員工.xlsx
+  const exportNames=[...new Set(rows.map(r=>String(r["員工"]||"").trim()).filter(Boolean))];
+  const exportDates=rows.map(r=>String(r["日期"]||"").trim()).filter(Boolean);
+
+  let exportEmployeeName=exportNames.length===1 ? exportNames[0] : "全部員工";
+  exportEmployeeName=exportEmployeeName.replace(/[\\/:*?"<>|]/g,"");
+
+  let rocYm="";
+  if(exportDates.length){
+    // 匯出列日期通常是 MM/DD；年份取目前篩選月份，若欄位空白則由原始資料取得。
+    let fullMonth=isoMonth(document.getElementById("attFilterMonth")?.value||"");
+    if(!fullMonth){
+      const rawRows=filteredAttendanceRows()||[];
+      const rawDate=String(rawRows[0]?.work_date||"").slice(0,10);
+      if(/^\\d{4}-\\d{2}/.test(rawDate)) fullMonth=rawDate.slice(0,7);
+    }
+    if(fullMonth){
+      const [yyyy,mm]=fullMonth.split("-").map(Number);
+      rocYm=`${yyyy-1911}${String(mm).padStart(2,"0")}`;
+    }
   }
 
-  const empSelect=document.getElementById("attFilterEmployee");
-  const empValue=String(empSelect?.value||"");
-  let selectedName="";
-  if(empValue){
-    selectedName=String(empSelect?.selectedOptions?.[0]?.textContent||"").trim();
-  }
-  selectedName=selectedName.replace(/[\\/:*?"<>|]/g,"");
-
-  let exportName="全部員工.xlsx";
-  if(monthValue){
-    const parts=monthValue.split("-");
-    const rocYear=Number(parts[0])-1911;
-    const rocMonth=String(Number(parts[1])).padStart(2,"0");
-    exportName=`${rocYear}${rocMonth}${selectedName||"全部員工"}.xlsx`;
-  }
-
+  const exportName=`${rocYm}${exportEmployeeName}.xlsx`;
   XLSX.writeFile(wb,exportName,{compression:true});}
 function exportAttendancePDF(){
   const rows=attendanceExportRows();
