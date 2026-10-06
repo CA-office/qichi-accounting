@@ -1554,7 +1554,7 @@ async function previewAllEmployees(){
 
     const totalNet=results.reduce((s,x)=>s+(+x.net_amount||0),0);
     const rowsHtml=results.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.bank_code)}</td><td>${esc(x.account_number)}</td><td><strong>${money(x.net_amount)}</strong></td></tr>`).join("");
-    const totalRow=`<tr class="all-payroll-total"><td colspan="2"></td><td style="text-align:right;font-weight:800">總金額&nbsp;&nbsp;${money(totalNet)}</td><td></td></tr>`;
+    const totalRow=`<tr class="all-payroll-total"><td colspan="2"></td><td style="text-align:right;font-weight:800">總金額</td><td style="font-weight:800">${money(totalNet)}</td></tr>`;
 
     document.getElementById("recordPreview").innerHTML=`<div class="preview-row"><span>月份</span><strong>${displayMonth(month)}</strong></div><div class="preview-row"><span>員工</span><strong>全部員工</strong></div><div class="preview-row"><span>員工人數</span><strong>${results.length} 人</strong></div><div class="preview-row"><span>總金額</span><strong>${money(totalNet)}</strong></div>`;
     document.getElementById("resultPreview").innerHTML=rowsHtml+totalRow;
