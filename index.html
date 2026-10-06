@@ -828,6 +828,35 @@ window.addEventListener('DOMContentLoaded',()=>{setupAttendanceQuickDate();setup
 }
 </style>
 
+
+<style id="qichi-mobile-payroll-preview-stack-fix-20261006">
+/* 手機版：薪資紀錄預覽與薪資結果預覽上下排列，避免第二張卡跑到螢幕右側 */
+@media(max-width:700px){
+  #payroll .preview-grid{
+    display:block !important;
+    width:100% !important;
+    max-width:100% !important;
+    overflow:visible !important;
+  }
+  #payroll .preview-box{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    box-sizing:border-box !important;
+    margin-bottom:14px !important;
+  }
+  #payroll .preview-box:nth-child(2) .table-wrap{
+    width:100% !important;
+    overflow-x:auto !important;
+    -webkit-overflow-scrolling:touch;
+  }
+  #payroll .preview-box:nth-child(2) table{
+    width:10cm !important;
+    min-width:10cm !important;
+    table-layout:fixed !important;
+  }
+}
+</style>
 </head><body>
 <div id="login" class="login"><div class="login-card"><div class="brand">七旗公司</div><form id="loginForm"><div class="field"><label>Email</label><input id="email" type="email" autocomplete="username"></div><div class="field"><label>密碼</label><input id="password" type="password" autocomplete="current-password"></div><button class="primary" type="submit">登入</button></form><div id="loginMsg" class="notice hidden" style="margin-top:12px"></div></div></div>
 <div id="app" class="hidden"><header class="topbar"><div class="top-title">七旗公司｜內帳管理系統</div><div class="top-user"><span id="userEmail"></span><button class="secondary" onclick="logout()">登出</button></div></header><div class="layout"><aside class="sidebar"><nav class="nav">
@@ -1552,11 +1581,12 @@ async function previewAllEmployees(){
       results.push({name:e.name||"",bank_code:b.bank_code||"",account_number:b.account_number||"",net_amount:net});
     }
 
-    const totalNet=results.reduce((s,x)=>s+(+x.net_amount||0),0);
-    const rowsHtml=results.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.bank_code)}</td><td>${esc(x.account_number)}</td><td><strong>${money(x.net_amount)}</strong></td></tr>`).join("");
-    const totalRow=`<tr class="all-payroll-total"><td colspan="2"></td><td style="text-align:right;font-weight:800">總金額&nbsp;&nbsp;${money(totalNet)}</td><td></td></tr>`;
+const paidOnly=results.filter(x=>Number(x.net_amount??x.net??x.netAmount??0)>0);
+    const totalNet=paidOnly.reduce((s,x)=>s+(+x.net_amount||0),0);
+    const rowsHtml=paidOnly.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.bank_code)}</td><td>${esc(x.account_number)}</td><td><strong>${money(x.net_amount)}</strong></td></tr>`).join("");
+    const totalRow=`<tr class="all-payroll-total"><td colspan="2"></td><td style="text-align:right;font-weight:800">總金額</td><td style="font-weight:800">${money(totalNet)}</td></tr>`;
 
-    document.getElementById("recordPreview").innerHTML=`<div class="preview-row"><span>月份</span><strong>${displayMonth(month)}</strong></div><div class="preview-row"><span>員工</span><strong>全部員工</strong></div><div class="preview-row"><span>員工人數</span><strong>${results.length} 人</strong></div><div class="preview-row"><span>總金額</span><strong>${money(totalNet)}</strong></div>`;
+    document.getElementById("recordPreview").innerHTML=`<div class="preview-row"><span>月份</span><strong>${displayMonth(month)}</strong></div><div class="preview-row"><span>員工</span><strong>全部員工</strong></div><div class="preview-row"><span>員工人數</span><strong>${paidOnly.length} 人</strong></div><div class="preview-row"><span>總金額</span><strong>${money(totalNet)}</strong></div>`;
     document.getElementById("resultPreview").innerHTML=rowsHtml+totalRow;
     currentPayrollPreview=null;
   }catch(e){
