@@ -1541,9 +1541,30 @@ async function previewAllEmployees(){
       let net=0;
 
       if(e.pay_type==="monthly"){
-        if(["王瓈巧","王燦巧","王璨巧","王琛巧","王璟巧"].includes(String(e?.name||"").replace(/\s+/g,""))){
+        const empName=String(e.name||"").replace(/\s+/g,"");
+        if(["王瓈巧","王燦巧","王璨巧","王琛巧","王璟巧"].includes(empName)){
           net=calcWangCanQiaoMonthly(e,rows).net;
+        }else if(empName==="李孟樺"){
+          // 與單選 calculateMonthly 的李孟樺規則保持完全一致。
+          let totalHours=0;
+          const fullLeaveDates=new Set(),workedDates=new Set();
+          rows.forEach(x=>{
+            const h=calcWorkedHours(x.clock_in,x.clock_out,x.status);
+            const st=String(x.status||"").trim();
+            const day=String(x.work_date||"").slice(0,10);
+            totalHours+=h;
+            if(st==="請假") {if(day)fullLeaveDates.add(day);return;}
+            if(st==="休假")return;
+            if(h>0&&day)workedDates.add(day);
+          });
+          totalHours=Math.round(totalHours*100)/100;
+          const expectedHours=workedDates.size*8;
+          const shortHours=Math.max(0,Math.round((expectedHours-totalHours)*100)/100);
+          const leaveDeduction=fullLeaveDates.size*1250;
+          const hourDeduction=Math.round(shortHours*156);
+          net=Math.max(0,(+e.base_salary||0)+(+e.allowance||0)-leaveDeduction-hourDeduction);
         }else{
+          // 其餘月薪員工：與單選 calculateMonthly 的24天制一致。
           const base=+e.base_salary||0;
           const fixedBonus=+e.allowance||0;
           const hourly=monthlyHourRate(e.id);
@@ -1555,12 +1576,8 @@ async function previewAllEmployees(){
           });
           totalHours=Math.round(totalHours*100)/100;
           shortHours=Math.round(shortHours*100)/100;
-          const standardHours=192;
-          const extraHours=Math.max(0,Math.round((totalHours-standardHours)*100)/100);
-          const autoDed=Math.round(shortHours*hourly);
-          const autoBonus=Math.round(extraHours*hourly);
-          const gross=base+fixedBonus+autoBonus;
-          net=Math.max(0,gross-autoDed);
+          const extraHours=Math.max(0,Math.round((totalHours-192)*100)/100);
+          net=Math.max(0,base+fixedBonus+Math.round(extraHours*hourly)-Math.round(shortHours*hourly));
         }
       }else{
         let qty=0,hrs=0,ded=0,pieceAmount=0,hourAmount=0;
