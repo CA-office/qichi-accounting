@@ -966,7 +966,7 @@ window.addEventListener('DOMContentLoaded',()=>{setupAttendanceQuickDate();setup
 
 <section id="invoice" class="section">
 
-<div class="card" id="ingredientStatsCard"><h2>食材統計表</h2><div class="ingredient-input-row"><div class="field"><label>日期 MM/DD</label><input id="ingredientDate" type="text" inputmode="numeric" maxlength="5" placeholder="例如 0826"></div><div class="field"><label>品名</label><input id="ingredientName" placeholder="輸入食材品名"></div><div class="field"><label>金額</label><input id="ingredientAmount" type="text" inputmode="numeric" placeholder="輸入金額"></div><div class="ingredient-add" style="display:none"><button id="ingredientSaveBtn" class="primary" type="button" onclick="saveIngredient()">新增</button></div></div>
+<div class="card" id="ingredientStatsCard" style="display:none !important" aria-hidden="true"><h2>食材統計表2</h2><div class="ingredient-input-row"><div class="field"><label>日期 MM/DD</label><input id="ingredientDate" type="text" inputmode="numeric" maxlength="5" placeholder="例如 0826"></div><div class="field"><label>品名</label><input id="ingredientName" placeholder="輸入食材品名"></div><div class="field"><label>金額</label><input id="ingredientAmount" type="text" inputmode="numeric" placeholder="輸入金額"></div><div class="ingredient-add" style="display:none"><button id="ingredientSaveBtn" class="primary" type="button" onclick="saveIngredient()">新增</button></div></div>
 <div id="ingredientSyncStatus" role="status" style="margin:8px 0;font-size:13px;color:#476052">登入後載入雲端食材資料</div>
 <div class="ingredient-toolbar">
   <button type="button" class="primary" onclick="finalizeIngredientRecords()">儲存並同步</button>
@@ -977,7 +977,7 @@ window.addEventListener('DOMContentLoaded',()=>{setupAttendanceQuickDate();setup
   <strong id="ingredientProductTotal" aria-live="polite">全部總金額：0</strong>
 </div>
 <div class="table-wrap"><table class="ingredient-stats-table"><thead><tr><th>操作</th><th>日期</th><th>品名</th><th>金額</th></tr></thead><tbody id="ingredientStatsBody"><tr><td colspan="4" class="muted">目前沒有食材資料</td></tr></tbody><tfoot><tr><th colspan="3" style="text-align:right">總金額</th><th id="ingredientStatsTotal">0</th></tr></tfoot></table></div></div>
-<div class="card" id="ingredient2Card"><h2>食材統計表2</h2><div class="ingredient2-grid">
+<div class="card" id="ingredient2Card"><h2>食材統計表</h2><div class="ingredient2-grid">
 <div class="field"><label>日期 MM/DD</label><input id="i2date" placeholder="例如 0826" inputmode="numeric" maxlength="5"></div>
 <div class="field"><label>品名</label><input id="i2name" placeholder="輸入品名" autocomplete="off"></div>
 <div class="field"><label>數量</label><input id="i2qty" type="number" min="0" step="any"></div>
