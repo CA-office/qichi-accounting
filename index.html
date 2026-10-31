@@ -2339,18 +2339,18 @@ function reset(){edit=null;['i2date','i2name','i2qty','i2price','i2amount'].forE
 let chosenMonth='';
 function selectedRows(){const day=$('i2daySelect')?.value||'';return data.filter(r=>(!chosenMonth||String(r.date||'').slice(0,2)===chosenMonth)&&(selectedNames.size===0||selectedNames.has(r.name))&&(!day||r.date===day))}
 function renderMonthOptions(){const el=$('i2monthSelect');if(!el)return;const months=[...new Set(data.map(r=>String(r.date||'').slice(0,2)).filter(m=>/^\d{2}$/.test(m)))].sort().reverse();const current=String(new Date().getMonth()+1).padStart(2,'0');if(!chosenMonth)chosenMonth=current;el.replaceChildren(...months.map(m=>new Option(m+' 月',m)));if(!months.includes(chosenMonth))el.add(new Option(chosenMonth+' 月（目前無資料）',chosenMonth));el.value=chosenMonth;}
-window.changeIngredient2Month=()=>{chosenMonth=$('i2monthSelect').value;renderDayOptions();renderIngredient2()};
+window.changeIngredient2Month=()=>{chosenMonth=$('i2monthSelect').value;renderMultiOptions();renderDayOptions();renderIngredient2()};
 function renderDayOptions(){const el=$('i2daySelect');if(!el)return;const old=el.value;const dates=[...new Set(data.filter(r=>!chosenMonth||String(r.date||'').slice(0,2)===chosenMonth).map(r=>r.date).filter(Boolean))].sort();el.replaceChildren(new Option('全部日期',''),...dates.map(d=>new Option(d,d)));if(dates.includes(old))el.value=old;}
 function renderMultiOptions(){
  const root=$('i2multiOptions');if(!root)return;
- const names=[...new Set(data.map(r=>r.name).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+ const monthRows=data.filter(r=>!chosenMonth||String(r.date||'').slice(0,2)===chosenMonth);\n const names=[...new Set(monthRows.map(r=>r.name).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
  for(const n of [...selectedNames])if(!names.includes(n))selectedNames.delete(n);
  root.replaceChildren(...names.map(name=>{
   const label=document.createElement('label');label.className='i2-multi-option';
   const check=document.createElement('input');check.type='checkbox';check.checked=selectedNames.has(name);
   check.addEventListener('change',()=>{if(check.checked)selectedNames.add(name);else selectedNames.delete(name);renderIngredient2()});
   const text=document.createElement('span');
-  const prices=[...new Set(data.filter(r=>r.name===name&&r.unit_price!==null&&r.unit_price!==undefined&&r.unit_price!=='').map(r=>Number(r.unit_price)).filter(Number.isFinite))].sort((a,b)=>a-b);
+  const prices=[...new Set(monthRows.filter(r=>r.name===name&&r.unit_price!==null&&r.unit_price!==undefined&&r.unit_price!=='').map(r=>Number(r.unit_price)).filter(Number.isFinite))].sort((a,b)=>a-b);
   text.textContent=name+(prices.length?' / '+prices.map(fmt).join('、'):'');
   label.append(check,text);return label;
  }));
